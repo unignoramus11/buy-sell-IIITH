@@ -32,37 +32,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    cart: [
-      {
-        item: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Item",
-        },
-        quantity: {
-          type: Number,
-          default: 1,
-        },
-      },
-    ],
-    sellerReviews: [
-      {
-        reviewer: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-        },
-        rating: {
-          type: Number,
-          required: true,
-          min: 1,
-          max: 5,
-        },
-        comment: String,
-        createdAt: {
-          type: Date,
-          default: Date.now,
-        },
-      },
-    ],
+    overallRating: {
+      type: mongoose.Schema.Types.Decimal128,
+      required: true,
+    },
   },
   {
     timestamps: true,
