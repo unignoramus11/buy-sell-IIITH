@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 
 const orderSchema = new mongoose.Schema(
   {
@@ -75,6 +76,24 @@ const orderSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+// Hash OTP before saving
+orderSchema.pre("save", async function (next) {
+  if (!this.isModified("OTP")) return next();
+
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.OTP = await bcrypt.hash(this.OTP, salt);
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Method to compare OTPs
+orderSchema.methods.compareOTP = async function (candidateOTP) {
+  return bcrypt.compare(candidateOTP, this.OTP);
+};
 
 const Order = mongoose.model("Order", orderSchema);
 
