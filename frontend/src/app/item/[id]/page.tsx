@@ -172,7 +172,7 @@ export default function ItemPage() {
                         src={productData.images[selectedImage]}
                         alt={productData.title}
                         fill
-                        className="object-contain rounded-lg"
+                        className="object-contain rounded-lg cursor-zoom-in"
                         priority
                       />
                     </motion.div>
