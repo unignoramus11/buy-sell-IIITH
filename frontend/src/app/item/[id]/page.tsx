@@ -119,129 +119,132 @@ export default function ItemPage() {
   };
 
   return (
-    <>
+    <div className="min-h-screen bg-gray-100">
       <div className="container mx-auto px-4 py-8 max-w-7xl pb-24 lg:pb-8">
         {/* Breadcrumb and Share */}
-        <div className="flex items-center justify-between mb-6">
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/">Home</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/search/electronics">
-                  Electronics
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>{productData.title}</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
+        <div className="bg-white rounded-2xl p-4 shadow-sm mb-6">
+          <div className="flex items-center justify-between">
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="/">Home</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="/search/electronics">
+                    Electronics
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>{productData.title}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
 
-          <Button
-            variant="secondary"
-            size="icon"
-            className="rounded-full"
-            onClick={handleShare}
-          >
-            <Share2 className="h-4 w-4" />
-          </Button>
+            <Button
+              variant="secondary"
+              size="icon"
+              className="rounded-full hover:bg-gray-100 transition-colors"
+              onClick={handleShare}
+            >
+              <Share2 className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Image Section */}
           <div className="lg:col-span-7 space-y-4">
-            <Card className="border-0 shadow-none">
-              <CardContent className="p-0">
-                <div className="relative aspect-[4/3] group overflow-hidden">
-                  <Lens hovering={hovering} setHovering={setHovering}>
-                    <AnimatePresence mode="wait">
-                      <motion.div
-                        key={selectedImage}
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ duration: 0.2 }}
-                        className="relative w-full h-full"
-                      >
-                        <Image
-                          src={productData.images[selectedImage]}
-                          alt={productData.title}
-                          fill
-                          className="object-contain rounded-lg"
-                          priority
-                        />
-                      </motion.div>
-                    </AnimatePresence>
-                  </Lens>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="bg-white rounded-3xl p-6 shadow-sm">
+              <div className="relative aspect-[4/3] group overflow-hidden rounded-2xl">
+                <Lens hovering={hovering} setHovering={setHovering}>
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={selectedImage}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.2 }}
+                      className="relative w-full h-full"
+                    >
+                      <Image
+                        src={productData.images[selectedImage]}
+                        alt={productData.title}
+                        fill
+                        className="object-contain rounded-lg"
+                        priority
+                      />
+                    </motion.div>
+                  </AnimatePresence>
+                </Lens>
+              </div>
 
-            <motion.div
-              animate={{
-                filter: hovering ? "blur(2px)" : "blur(0px)",
-              }}
-              className="py-4 relative z-20"
-            >
-              <ScrollArea className="w-full whitespace-nowrap rounded-lg">
-                <div className="flex space-x-2 p-1">
-                  {productData.images.map((img, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setSelectedImage(index)}
-                      className={`relative w-24 aspect-square flex-shrink-0 rounded-md overflow-hidden transition-all
+              <motion.div
+                animate={{
+                  filter: hovering ? "blur(2px)" : "blur(0px)",
+                }}
+                className="py-4 relative z-20"
+              >
+                <ScrollArea className="w-full whitespace-nowrap rounded-xl">
+                  <div className="flex space-x-2 p-1">
+                    {productData.images.map((img, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setSelectedImage(index)}
+                        className={`relative w-24 aspect-square flex-shrink-0 rounded-md overflow-hidden transition-all
                       ${
                         selectedImage === index
                           ? "ring-2 ring-blue-500"
                           : "ring-1 ring-gray-200"
                       }
                       hover:ring-2 hover:ring-blue-400`}
-                    >
-                      <Image
-                        src={img}
-                        alt={`Thumbnail ${index + 1}`}
-                        fill
-                        className="object-cover"
-                      />
-                    </button>
-                  ))}
-                </div>
-              </ScrollArea>
-            </motion.div>
+                      >
+                        <Image
+                          src={img}
+                          alt={`Thumbnail ${index + 1}`}
+                          fill
+                          className="object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </motion.div>
+            </div>
           </div>
 
           {/* Details Section */}
-          <div className="lg:col-span-5 space-y-6">
-            <Card className="border-0 shadow-none sticky top-4">
-              <CardHeader className="px-0">
+          <div className="lg:col-span-5">
+            <div className="bg-white rounded-3xl p-6 shadow-sm sticky top-4">
+              <div className="space-y-6">
+                {/* Categories */}
                 <div className="flex flex-wrap gap-2 mb-4">
                   {productData.categories.map((category) => (
                     <Badge
                       key={category}
                       variant="secondary"
-                      className={`${categoryColors[category]} font-medium`}
+                      className={`${categoryColors[category]} font-medium rounded-full px-4`}
                     >
                       {category}
                     </Badge>
                   ))}
                 </div>
-                <CardTitle className="text-4xl font-bold">
-                  <TextGenerateEffect words={productData.title} />
-                </CardTitle>
-                <CardDescription className="text-lg mt-2">
-                  {productData.description}
-                </CardDescription>
-                <p className="text-3xl font-bold text-blue-600 mt-4">
-                  {formatPrice(productData.price)}
-                </p>
-              </CardHeader>
 
-              <CardContent className="px-0 space-y-6">
-                <Separator />
+                {/* Title and Description */}
+                <div>
+                  <h1 className="text-4xl font-bold">
+                    <TextGenerateEffect words={productData.title} />
+                  </h1>
+                  <p className="text-lg text-gray-600 mt-2">
+                    {productData.description}
+                  </p>
+                  <p className="text-3xl font-bold text-blue-600 mt-4">
+                    {formatPrice(productData.price)}
+                  </p>
+                </div>
+
+                <Separator className="bg-gray-100" />
 
                 {/* Seller Section */}
                 {/* TODO: migrate seller info to a separate page */}
@@ -310,10 +313,10 @@ export default function ItemPage() {
                   </SheetContent>
                 </Sheet>
 
-                <Separator />
+                <Separator className="bg-gray-100" />
 
                 {/* Specifications */}
-                <div className="space-y-4">
+                <div className="bg-gray-50 rounded-2xl p-6 space-y-4">
                   <h3 className="font-semibold text-lg">Specifications</h3>
                   <div className="grid grid-cols-2 gap-4">
                     {Object.entries(productData.specs).map(([key, value]) => (
@@ -324,8 +327,6 @@ export default function ItemPage() {
                     ))}
                   </div>
                 </div>
-
-                <Separator />
 
                 <div className="flex items-center gap-4 text-sm text-gray-600">
                   <div className="flex items-center">
@@ -338,27 +339,31 @@ export default function ItemPage() {
                   </div>
                 </div>
 
-                <div className="hidden lg:block">
-                  <Button size="lg" className="w-full font-bold">
-                    <ShoppingCart className="mr-2 h-4 w-4" />
-                    Add to Cart
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                <Button
+                  size="lg"
+                  className="w-full font-bold rounded-xl h-14 text-lg shadow-lg shadow-blue-500/20 hidden lg:flex"
+                >
+                  <ShoppingCart className="mr-2 h-5 w-5" />
+                  Add to Cart
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Sticky Mobile Cart Button */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t lg:hidden">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t backdrop-blur-lg bg-white/80 lg:hidden">
         <div className="container mx-auto max-w-7xl">
-          <Button size="lg" className="w-full h-12 font-bold">
-            <ShoppingCart className="mr-2 h-4 w-4" />
-            Add to Cart - {formatPrice(productData.price)}
+          <Button
+            size="lg"
+            className="w-full h-14 font-bold rounded-xl text-lg shadow-lg shadow-blue-500/20"
+          >
+            <ShoppingCart className="mr-2 h-5 w-5" />
+            Add to Cart
           </Button>
         </div>
       </div>
-    </>
+    </div>
   );
 }
