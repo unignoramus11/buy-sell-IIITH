@@ -1,9 +1,9 @@
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { AuthCard } from "@/components/auth/AuthCard";
-import { SignInForm } from "@/components/auth/SignInForm";
+import { LoginForm } from "@/components/auth/LoginForm";
 import Link from "next/link";
 
-export default function SignInPage() {
+export default function loginPage() {
   const footer = (
     <div className="text-sm text-gray-500 dark:text-gray-400">
       Don't have an account?
@@ -17,10 +17,10 @@ export default function SignInPage() {
     <AuthLayout>
       <AuthCard
         title="Welcome Back!"
-        description="Enter your details to sign in"
+        description="Enter your details to login"
         footer={footer}
       >
-        <SignInForm />
+        <LoginForm />
       </AuthCard>
     </AuthLayout>
   );

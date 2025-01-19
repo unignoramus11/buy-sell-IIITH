@@ -54,7 +54,7 @@ export const SignUpForm = () => {
       description: "Account created successfully!",
     });
 
-    window.location.href = "/signin";
+    window.location.href = "/login";
   };
 
   const handleChange = (e: { target: { name: any; value: any } }) => {

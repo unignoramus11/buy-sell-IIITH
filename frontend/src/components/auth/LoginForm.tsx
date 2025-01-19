@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { FormField } from "./FormField";
 import ReCAPTCHA from "react-google-recaptcha";
 
-export const SignInForm = () => {
+export const LoginForm = () => {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     email: "",
@@ -15,7 +15,7 @@ export const SignInForm = () => {
 
   const handleSubmit = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
-    // TODO: add signin logic
+    // TODO: add login logic
     const token = recaptcha.current?.getValue();
     if (!token) {
       toast({
@@ -67,7 +67,7 @@ export const SignInForm = () => {
         />
       </div>
       <Button type="submit" className="w-full">
-        Sign In
+        Login
       </Button>
     </form>
   );

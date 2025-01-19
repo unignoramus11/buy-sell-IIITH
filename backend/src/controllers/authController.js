@@ -57,7 +57,7 @@ export const signup = async (req, res) => {
   }
 };
 
-export const signin = async (req, res) => {
+export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -98,7 +98,7 @@ export const signin = async (req, res) => {
   }
 };
 
-export const signout = (req, res) => {
+export const logut = (req, res) => {
   res.clearCookie("token");
   res.json({ message: "Signed out successfully" });
 };

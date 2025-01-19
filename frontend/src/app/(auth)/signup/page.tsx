@@ -7,8 +7,8 @@ export default function SignUpPage() {
   const footer = (
     <div className="text-sm text-gray-500 dark:text-gray-400">
       Already have an account?
-      <Link href="/signin" className="ml-1 text-primary hover:underline">
-        Sign In
+      <Link href="/login" className="ml-1 text-primary hover:underline">
+        Login
       </Link>
     </div>
   );

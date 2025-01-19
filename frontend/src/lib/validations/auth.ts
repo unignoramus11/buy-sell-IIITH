@@ -1,6 +1,6 @@
 import * as z from "zod";
 
-export const signInSchema = z.object({
+export const loginSchema = z.object({
   email: z
     .string()
     .email("Invalid email address")
@@ -20,9 +20,7 @@ export const signUpSchema = z
       .number()
       .min(16, "You must be at least 16 years old")
       .max(200, "Invalid age"),
-    contactNumber: z
-      .string()
-      .regex(/^\d{10}$/, "Invalid contact number"),
+    contactNumber: z.string().regex(/^\d{10}$/, "Invalid contact number"),
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
   })
