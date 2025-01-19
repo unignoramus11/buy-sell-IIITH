@@ -31,7 +31,6 @@ import {
   Users,
   Share2,
   ChevronRight,
-  ZoomIn,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -43,7 +42,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Lens } from "@/components/ui/lens";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 
 // TODO: Replace this with actual product data
@@ -157,17 +156,26 @@ export default function ItemPage() {
           <div className="lg:col-span-7 space-y-4">
             <Card className="border-0 shadow-none">
               <CardContent className="p-0">
-                <div className="relative aspect-[4/3] group">
+                <div className="relative aspect-[4/3] group overflow-hidden">
                   <Lens hovering={hovering} setHovering={setHovering}>
-                    <Image
-                      src={productData.images[selectedImage]}
-                      alt={productData.title}
-                      fill
-                      className={
-                        "object-contain rounded-lg transition-transform duration-300"
-                      }
-                      priority
-                    />
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={selectedImage}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.2 }}
+                        className="relative w-full h-full"
+                      >
+                        <Image
+                          src={productData.images[selectedImage]}
+                          alt={productData.title}
+                          fill
+                          className="object-contain rounded-lg"
+                          priority
+                        />
+                      </motion.div>
+                    </AnimatePresence>
                   </Lens>
                 </div>
               </CardContent>
