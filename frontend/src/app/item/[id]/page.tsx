@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Lens } from "@/components/ui/lens";
 import { motion } from "framer-motion";
+import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 
 // TODO: Replace this with actual product data
 const productData = {
@@ -208,131 +209,129 @@ export default function ItemPage() {
           {/* Details Section */}
           <div className="lg:col-span-5 space-y-6">
             <Card className="border-0 shadow-none sticky top-4">
-                <CardHeader className="px-0">
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {productData.categories.map((category) => (
-                      <Badge
-                        key={category}
-                        variant="secondary"
-                        className={`${categoryColors[category]} font-medium`}
-                      >
-                        {category}
-                      </Badge>
-                    ))}
-                  </div>
-                  <CardTitle className="text-4xl font-bold">
-                    {productData.title}
-                  </CardTitle>
-                  <CardDescription className="text-lg mt-2">
-                    {productData.description}
-                  </CardDescription>
-                  <p className="text-3xl font-bold text-blue-600 mt-4">
-                    {formatPrice(productData.price)}
-                  </p>
-                </CardHeader>
+              <CardHeader className="px-0">
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {productData.categories.map((category) => (
+                    <Badge
+                      key={category}
+                      variant="secondary"
+                      className={`${categoryColors[category]} font-medium`}
+                    >
+                      {category}
+                    </Badge>
+                  ))}
+                </div>
+                <CardTitle className="text-4xl font-bold">
+                  <TextGenerateEffect words={productData.title} />
+                </CardTitle>
+                <CardDescription className="text-lg mt-2">
+                  {productData.description}
+                </CardDescription>
+                <p className="text-3xl font-bold text-blue-600 mt-4">
+                  {formatPrice(productData.price)}
+                </p>
+              </CardHeader>
 
               <CardContent className="px-0 space-y-6">
                 <Separator />
 
-                  {/* Seller Section */}
-                  <Sheet>
-                    <SheetTrigger asChild>
-                      <div className="flex items-center gap-4 cursor-pointer hover:bg-gray-50 p-4 rounded-lg transition-colors">
-                        <Avatar className="h-12 w-12">
+                {/* Seller Section */}
+                {/* TODO: migrate seller info to a separate page */}
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <div className="flex items-center gap-4 cursor-pointer hover:bg-gray-50 p-4 rounded-lg transition-colors">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={productData.seller.avatar} />
+                        <AvatarFallback>JD</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <p className="font-semibold">
+                          {productData.seller.name}
+                        </p>
+                        <div className="flex items-center gap-1 text-sm text-gray-600">
+                          <Star className="h-4 w-4 fill-yellow-400 stroke-yellow-400" />
+                          <span>{productData.seller.rating}</span>
+                          <span className="mx-1">•</span>
+                          <span>{productData.seller.totalSales} sales</span>
+                        </div>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-gray-400" />
+                    </div>
+                  </SheetTrigger>
+                  <SheetContent className="w-[400px] sm:w-[540px]">
+                    <SheetHeader>
+                      <SheetTitle>Seller Information</SheetTitle>
+                    </SheetHeader>
+                    <div className="mt-6 space-y-6">
+                      <div className="flex items-center gap-4">
+                        <Avatar className="h-16 w-16">
                           <AvatarImage src={productData.seller.avatar} />
                           <AvatarFallback>JD</AvatarFallback>
                         </Avatar>
-                        <div className="flex-1">
-                          <p className="font-semibold">
+                        <div>
+                          <h3 className="font-semibold text-lg">
                             {productData.seller.name}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            Verified seller since{" "}
+                            {productData.seller.verifiedSince}
                           </p>
-                          <div className="flex items-center gap-1 text-sm text-gray-600">
-                            <Star className="h-4 w-4 fill-yellow-400 stroke-yellow-400" />
-                            <span>{productData.seller.rating}</span>
-                            <span className="mx-1">•</span>
-                            <span>{productData.seller.totalSales} sales</span>
-                          </div>
                         </div>
-                        <ChevronRight className="h-5 w-5 text-gray-400" />
                       </div>
-                    </SheetTrigger>
-                    <SheetContent className="w-[400px] sm:w-[540px]">
-                      <SheetHeader>
-                        <SheetTitle>Seller Information</SheetTitle>
-                      </SheetHeader>
-                      <div className="mt-6 space-y-6">
-                        <div className="flex items-center gap-4">
-                          <Avatar className="h-16 w-16">
-                            <AvatarImage src={productData.seller.avatar} />
-                            <AvatarFallback>JD</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <h3 className="font-semibold text-lg">
-                              {productData.seller.name}
-                            </h3>
-                            <p className="text-sm text-gray-500">
-                              Verified seller since{" "}
-                              {productData.seller.verifiedSince}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="space-y-4">
-                          <h4 className="font-medium">Rating Breakdown</h4>
-                          {Object.entries(productData.seller.ratingBreakdown)
-                            .reverse()
-                            .map(([rating, percentage]) => (
-                              <div
-                                key={rating}
-                                className="flex items-center gap-4"
-                              >
-                                <div className="w-20 flex items-center gap-1">
-                                  <Star className="h-4 w-4 fill-yellow-400 stroke-yellow-400" />
-                                  <span>{rating}</span>
-                                </div>
-                                <Progress
-                                  value={percentage}
-                                  className="flex-1"
-                                />
-                                <span className="w-12 text-sm text-gray-500">
-                                  {percentage}%
-                                </span>
+                      <div className="space-y-4">
+                        <h4 className="font-medium">Rating Breakdown</h4>
+                        {Object.entries(productData.seller.ratingBreakdown)
+                          .reverse()
+                          .map(([rating, percentage]) => (
+                            <div
+                              key={rating}
+                              className="flex items-center gap-4"
+                            >
+                              <div className="w-20 flex items-center gap-1">
+                                <Star className="h-4 w-4 fill-yellow-400 stroke-yellow-400" />
+                                <span>{rating}</span>
                               </div>
-                            ))}
-                        </div>
+                              <Progress value={percentage} className="flex-1" />
+                              <span className="w-12 text-sm text-gray-500">
+                                {percentage}%
+                              </span>
+                            </div>
+                          ))}
                       </div>
-                    </SheetContent>
-                  </Sheet>
+                    </div>
+                  </SheetContent>
+                </Sheet>
 
                 <Separator />
 
-                  {/* Specifications */}
-                  <div className="space-y-4">
-                    <h3 className="font-semibold text-lg">Specifications</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      {Object.entries(productData.specs).map(([key, value]) => (
-                        <div key={key} className="space-y-1">
-                          <p className="text-sm text-gray-500">{key}</p>
-                          <p className="font-medium">{value}</p>
-                        </div>
-                      ))}
-                    </div>
+                {/* Specifications */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg">Specifications</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {Object.entries(productData.specs).map(([key, value]) => (
+                      <div key={key} className="space-y-1">
+                        <p className="text-sm text-gray-500">{key}</p>
+                        <p className="font-medium">{value}</p>
+                      </div>
+                    ))}
                   </div>
+                </div>
 
                 <Separator />
 
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
-                    <div className="flex items-center">
-                      <Clock className="h-4 w-4 mr-2" />
-                      Listed {format(productData.createdAt, "PPP")}
-                    </div>
-                    <div className="flex items-center">
-                      <Users className="h-4 w-4 mr-2" />
-                      {productData.cartCount} in cart
-                    </div>
+                <div className="flex items-center gap-4 text-sm text-gray-600">
+                  <div className="flex items-center">
+                    <Clock className="h-4 w-4 mr-2" />
+                    Listed {format(productData.createdAt, "PPP")}
                   </div>
+                  <div className="flex items-center">
+                    <Users className="h-4 w-4 mr-2" />
+                    {productData.cartCount} in cart
+                  </div>
+                </div>
 
                 <div className="hidden lg:block">
-                  <Button size="lg" className="w-full">
+                  <Button size="lg" className="w-full font-bold">
                     <ShoppingCart className="mr-2 h-4 w-4" />
                     Add to Cart
                   </Button>
@@ -346,7 +345,7 @@ export default function ItemPage() {
       {/* Sticky Mobile Cart Button */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t lg:hidden">
         <div className="container mx-auto max-w-7xl">
-          <Button size="lg" className="w-full">
+          <Button size="lg" className="w-full h-12 font-bold">
             <ShoppingCart className="mr-2 h-4 w-4" />
             Add to Cart - {formatPrice(productData.price)}
           </Button>
