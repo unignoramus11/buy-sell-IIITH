@@ -60,6 +60,7 @@ export const SignInForm = () => {
         onChange={handleChange}
       />
       <div className="flex justify-center items-center w-full my-4">
+        {/* TODO: perfom server-side key check for reCAPTCHA */}
         <ReCAPTCHA
           ref={recaptcha}
           sitekey={String(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY)}
