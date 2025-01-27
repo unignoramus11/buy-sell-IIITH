@@ -55,7 +55,7 @@ export function ItemCard({
               <CardItem translateZ="100" className="flex-1 w-full mt-4">
                 <div
                   className="relative w-full h-full group/image"
-                  onClick={() => (window.location.href = `/item/${itemID}`)}
+                  onClick={() => (window.location.href = `/explore/item/${itemID}`)}
                 >
                   <Image
                     src={imageUrl}
