@@ -17,16 +17,23 @@ import {
   ChevronRight,
   ArrowRight,
 } from "lucide-react";
+import { useItem } from "@/hooks/useItem";
+import { useCart } from "@/hooks/useCart";
+import { useAuth } from "@/contexts/AuthContext";
+import { use } from "react";
 
 interface ItemDetails {
-  id: string;
+  _id: string;
   name: string;
   description: string;
   price: number;
   seller: {
-    name: string;
+    _id: string;
+    firstName: string;
+    lastName: string;
+    avatar: string;
     email: string;
-    rating: number;
+    overallRating: number;
   };
   categories: string[];
   images: string[];
@@ -34,9 +41,21 @@ interface ItemDetails {
     [key: string]: string;
   };
   quantity: number;
+  isAvailable: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export default function ItemPage({ params }: { params: { id: string } }) {
+export default function ItemPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const resolvedParams = use(params);
+  const { getItem, checkItemInCart, isOwnItem } = useItem();
+  const { addToCart: addItemToCart } = useCart();
+  const { user } = useAuth();
+
   const [item, setItem] = useState<ItemDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -45,53 +64,31 @@ export default function ItemPage({ params }: { params: { id: string } }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Simulate API call
     const fetchItem = async () => {
       setIsLoading(true);
-      // Replace with actual API call
-      setTimeout(() => {
-        setItem({
-          id: params.id,
-          name: "MacBook Pro M1",
-          description:
-            "Apple MacBook Pro with M1 chip, perfect condition, barely used for 6 months. Comes with original charger and box.",
-          price: 85000,
-          seller: {
-            name: "John Doe",
-            email: "john.doe@iiit.ac.in",
-            rating: 4.8,
-          },
-          categories: ["Electronics", "Laptops"],
-          images: [
-            "/images/test.png",
-            "/images/test2.png",
-            "/images/test3.png",
-          ],
-          specifications: {
-            Processor: "Apple M1",
-            RAM: "16GB",
-            Storage: "512GB SSD",
-            Display: "13.3-inch Retina",
-            Battery: "Up to 20 hours",
-            Condition: "Like New",
-          },
-          quantity: 1,
-        });
-        setIsLoading(false);
-      }, 1000);
-
-      setIsInCart(false);
+      const itemData = await getItem(resolvedParams.id);
+      if (itemData) {
+        setItem(itemData);
+        // Check if item is in cart
+        const inCart = await checkItemInCart(itemData._id);
+        setIsInCart(inCart);
+      }
+      setIsLoading(false);
     };
 
     fetchItem();
-  }, [params.id]);
+  }, [resolvedParams.id]);
 
   const addToCart = async () => {
-    toast({
-      title: "Added to cart",
-      description: "Item has been added to your cart successfully.",
-    });
-    setIsInCart(true);
+    if (!item) return;
+    const result = await addItemToCart(item._id, 1);
+    if (result) {
+      setIsInCart(true);
+      toast({
+        title: "Added to cart",
+        description: "Item has been added to your cart successfully.",
+      });
+    }
   };
 
   if (isLoading) {
@@ -123,7 +120,11 @@ export default function ItemPage({ params }: { params: { id: string } }) {
                 key={currentImageIndex}
                 initial={{ opacity: 0 }}
                 onClick={() => {
-                  window.open(item.images[currentImageIndex], "_blank");
+                  window.open(
+                    "http://localhost:6969/uploads/items/" +
+                      item.images[currentImageIndex],
+                    "_blank"
+                  );
                 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -132,7 +133,10 @@ export default function ItemPage({ params }: { params: { id: string } }) {
               >
                 <Lens hovering={imageHovering} setHovering={setImageHovering}>
                   <Image
-                    src={item.images[currentImageIndex]}
+                    src={
+                      "http://localhost:6969/uploads/items/" +
+                      item.images[currentImageIndex]
+                    }
                     alt={item.name}
                     fill
                     className="object-contain rounded-lg cursor-pointer"
@@ -185,7 +189,7 @@ export default function ItemPage({ params }: { params: { id: string } }) {
           )}
 
           {/* Thumbnail Preview */}
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700">
+          <div className="flex gap-2 overflow-x-auto pb-5 scrollbar-thin scrollbar-thumb-gray-100 dark:scrollbar-thumb-gray-700 p-2">
             {item.images.map((image, index) => (
               <button
                 key={index}
@@ -197,7 +201,9 @@ export default function ItemPage({ params }: { params: { id: string } }) {
                 }`}
               >
                 <Image
-                  src={image}
+                  src={
+                    "http://localhost:6969/uploads/items/" + item.images[index]
+                  }
                   alt={`${item.name} preview ${index + 1}`}
                   fill
                   className="object-cover"
@@ -215,25 +221,53 @@ export default function ItemPage({ params }: { params: { id: string } }) {
               <span className="text-2xl font-bold">
                 ₹{item.price.toLocaleString()}
               </span>
-              <div className="flex items-center gap-1 text-yellow-500">
-                <Star size={16} fill="currentColor" />
-                <span>{item.seller.rating}</span>
-              </div>
             </div>
           </div>
 
-          <Card>
+          <Card
+            onClick={() => {
+                window.location.href = "/profile/" + item.seller._id;
+            }}
+            className="cursor-pointer"
+          >
             <CardHeader>
               <CardTitle className="text-lg">Seller Information</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                  <User size={20} />
+                <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden">
+                  {user?.avatar ? (
+                    <img
+                      src={
+                        "http://localhost:6969/uploads/users/" +
+                        item.seller.avatar
+                      }
+                      alt="User avatar"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User size={20} />
+                  )}
                 </div>
-                <div>
-                  <p className="font-medium">{item.seller.name}</p>
-                  <p className="text-sm text-gray-500">{item.seller.email}</p>
+                <div className="flex w-full justify-between flex-col sm:flex-row">
+                  <div>
+                    <p className="font-medium">
+                      {item.seller.firstName + " " + item.seller.lastName}
+                    </p>
+                    <p className="text-sm text-gray-500">{item.seller.email}</p>
+                  </div>
+                  <div className="flex items-center gap-1 text-yellow-500">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`w-5 h-5 ${
+                          i < item.seller.overallRating
+                            ? "text-yellow-500 fill-current"
+                            : "text-gray-300"
+                        }`}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -244,21 +278,13 @@ export default function ItemPage({ params }: { params: { id: string } }) {
             <p className="text-gray-600">{item.description}</p>
           </div>
 
-          <div>
-            <h2 className="text-xl font-semibold mb-2">Specifications</h2>
-            <div className="grid grid-cols-2 gap-4">
-              {Object.entries(item.specifications).map(([key, value]) => (
-                <div key={key} className="flex flex-col">
-                  <span className="text-sm text-gray-500">{key}</span>
-                  <span className="font-medium">{value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* Desktop Buttons */}
           <div className="hidden md:flex gap-4">
-            {isInCart ? (
+            {isOwnItem(item.seller.email) ? (
+              <Button size="lg" variant="outline" className="flex-1" disabled>
+                Cannot buy your own item
+              </Button>
+            ) : isInCart ? (
               <Button size="lg" variant="outline" className="flex-1" asChild>
                 <Link href="/cart">
                   Go to Cart
@@ -287,48 +313,41 @@ export default function ItemPage({ params }: { params: { id: string } }) {
             </Button>
           </div>
 
-          <div className="flex gap-2 flex-wrap">
-            {item.categories.map((category) => (
-              <span
-                key={category}
-                className="px-3 py-1 bg-gray-100 rounded-full text-sm"
-              >
-                {category}
-              </span>
-            ))}
+          {/* Mobile Sticky Buttons */}
+          <div className="fixed bottom-0 left-0 right-0 md:hidden bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 p-4 flex gap-4">
+            {isOwnItem(item.seller.email) ? (
+              <Button size="lg" variant="outline" className="flex-1" disabled>
+                Cannot buy your own item
+              </Button>
+            ) : isInCart ? (
+              <Button size="lg" variant="outline" className="flex-1" asChild>
+                <Link href="/cart">
+                  Go to Cart
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            ) : (
+              <Button size="lg" className="flex-1" onClick={addToCart}>
+                <ShoppingCart className="mr-2 h-4 w-4" />
+                Add to Cart
+              </Button>
+            )}
+            <Button
+              size="lg"
+              variant="outline"
+              className="w-12 flex items-center justify-center"
+              onClick={() => {
+                navigator.clipboard.writeText(window.location.href);
+                toast({
+                  title: "Link copied",
+                  description: "Item link has been copied to clipboard.",
+                });
+              }}
+            >
+              <Share2 className="h-4 w-4" />
+            </Button>
           </div>
         </div>
-      </div>
-
-      {/* Mobile Sticky Buttons */}
-      <div className="fixed bottom-0 left-0 right-0 md:hidden bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 p-4 flex gap-4">
-        {isInCart ? (
-          <Button size="lg" variant="outline" className="flex-1" asChild>
-            <Link href="/cart">
-              Go to Cart
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
-        ) : (
-          <Button size="lg" className="flex-1" onClick={addToCart}>
-            <ShoppingCart className="mr-2 h-4 w-4" />
-            Add to Cart
-          </Button>
-        )}
-        <Button
-          size="lg"
-          variant="outline"
-          className="w-12 flex items-center justify-center"
-          onClick={() => {
-            navigator.clipboard.writeText(window.location.href);
-            toast({
-              title: "Link copied",
-              description: "Item link has been copied to clipboard.",
-            });
-          }}
-        >
-          <Share2 className="h-4 w-4" />
-        </Button>
       </div>
     </div>
   );

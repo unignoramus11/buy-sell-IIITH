@@ -109,26 +109,45 @@ export const createReview = async (
   try {
     const { rating, comment } = req.body;
     const revieweeId = req.params.id;
+    const reviewerId = req.user!.id;
 
     // Check if user is reviewing themselves
-    if (revieweeId === req.user!.id) {
+    if (revieweeId === reviewerId) {
       res.status(400).json({ message: "Cannot review yourself" });
       return;
     }
 
     // Check if user has already reviewed this person
     const existingReview = await Review.findOne({
-      reviewer: req.user!.id,
+      reviewer: reviewerId,
       reviewee: revieweeId,
     });
 
     if (existingReview) {
-      res.status(400).json({ message: "You have already reviewed this user" });
-      return;
+      // Delete existing review and update user's overall rating
+      const deletedRating = existingReview.rating;
+      const oldOverallRating =
+        (await User.findById(revieweeId).select("overallRating"))
+          ?.overallRating ?? 0;
+      const oldNumRatings =
+        (await User.findById(revieweeId).select("ratingCount"))?.ratingCount ??
+        0;
+      const newOverallRating =
+        oldNumRatings > 1
+          ? (oldOverallRating * oldNumRatings - deletedRating) /
+            (oldNumRatings - 1)
+          : 0;
+
+      await Review.findByIdAndDelete(existingReview._id);
+
+      await User.findByIdAndUpdate(revieweeId, {
+        $set: { overallRating: newOverallRating },
+        $inc: { ratingCount: -1 },
+      });
     }
 
     const review = new Review({
-      reviewer: req.user!.id,
+      reviewer: reviewerId,
       reviewee: revieweeId,
       rating,
       comment,
@@ -146,10 +165,7 @@ export const createReview = async (
       $inc: { ratingCount: 1 },
     });
 
-    res.status(201).json({
-      message: "Review created successfully",
-      review,
-    });
+    res.status(201).json(review);
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
   }

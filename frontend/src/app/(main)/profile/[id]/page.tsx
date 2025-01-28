@@ -34,11 +34,11 @@ import {
   Camera,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { format } from "date-fns";
+import { format, set } from "date-fns";
 import { useProfile } from "@/hooks/useProfile";
 
 interface UserProfile {
-  id: string;
+  _id: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -47,15 +47,18 @@ interface UserProfile {
   contactNumber: string;
   avatar: string;
   overallRating: number;
-  reviews: Review[];
+  sellerReviews: Review[];
 }
 
 interface Review {
-  id: string;
+  _id: string;
   rating: number;
   comment: string;
-  reviewerName: string;
-  reviewerAvatar: string;
+  reviewer: {
+    avatar: string;
+    firstName: string;
+    lastName: string;
+  };
   createdAt: string;
 }
 
@@ -64,7 +67,7 @@ export default function ProfilePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const resolvedParams = use(params);
+  const userId = decodeURIComponent(use(params).id);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -77,7 +80,6 @@ export default function ProfilePage({
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const isOwnProfile = true; // Replace with actual auth check
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
@@ -91,75 +93,76 @@ export default function ProfilePage({
   });
   const [reviews, setReviews] = useState<Review[]>([]);
 
-  const { getProfile, updateProfile, updatePassword, isLoading } = useProfile();
+  const [showReviewDialog, setShowReviewDialog] = useState(false);
+  const {
+    getProfile,
+    updateProfile,
+    updatePassword,
+    createReview,
+    currentUser,
+    isLoading,
+  } = useProfile();
+
+  const [isOwnProfile, setIsOwnProfile] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const data = await getProfile(resolvedParams.id);
+      const data = await getProfile(userId);
       if (data) {
-        setProfile(data.user);
+        setProfile(data.user as UserProfile);
         setReviews(data.reviews);
+        setIsOwnProfile(currentUser?.id === data.user._id);
       }
     };
 
     fetchProfile();
-  }, [resolvedParams.id]);
+  }, [userId]);
 
-  // const handlePasswordChange = async () => {
-  //   // Validate passwords
-  //   if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-  //     toast({
-  //       title: "Passwords don't match",
-  //       description: "New password and confirm password must match.",
-  //       variant: "destructive",
-  //     });
-  //     return;
-  //   }
+  const handleReviewSubmit = async (rating: number, comment: string) => {
+    if (!profile) return;
 
-  //   if (passwordForm.newPassword.length < 8) {
-  //     toast({
-  //       title: "Password too short",
-  //       description: "Password must be at least 8 characters long.",
-  //       variant: "destructive",
-  //     });
-  //     return;
-  //   }
-
-  //   // Replace with actual API call
-  //   try {
-  //     // Simulate API call
-  //     await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  //     toast({
-  //       title: "Password updated",
-  //       description: "Your password has been updated successfully.",
-  //     });
-  //     setIsChangingPassword(false);
-  //     setPasswordForm({
-  //       currentPassword: "",
-  //       newPassword: "",
-  //       confirmPassword: "",
-  //     });
-  //   } catch (error) {
-  //     toast({
-  //       title: "Error",
-  //       description: "Failed to update password. Please try again.",
-  //       variant: "destructive",
-  //     });
-  //   }
-  // };
+    const result = await createReview(profile._id, rating, comment);
+    if (result) {
+      setShowReviewDialog(false);
+      // Refresh profile to get updated reviews
+      const data = await getProfile(userId);
+      if (data) {
+        setProfile(data.user);
+        setReviews(data.reviews);
+      }
+    }
+  };
 
   const handlePasswordChange = async () => {
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast({
+        title: "Passwords don't match",
+        description: "New password and confirm password must match.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const result = await updatePassword(
       passwordForm.currentPassword,
       passwordForm.newPassword
     );
     if (result) {
       setIsChangingPassword(false);
+      toast({
+        title: "Password updated",
+        description: "Your password has been updated successfully.",
+      });
       setPasswordForm({
         currentPassword: "",
         newPassword: "",
         confirmPassword: "",
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to update password. Please try again.",
+        variant: "destructive",
       });
     }
   };
@@ -178,7 +181,7 @@ export default function ProfilePage({
         description: "Your profile has been updated successfully.",
       });
       // Refresh profile
-      const data = await getProfile(resolvedParams.id);
+      const data = await getProfile(userId);
       if (data) {
         setProfile(data.user);
       }
@@ -191,18 +194,47 @@ export default function ProfilePage({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setIsUploading(true);
-    // Replace with actual upload logic
-    setTimeout(() => {
-      setIsUploading(false);
-      setProfile((prev) =>
-        prev ? { ...prev, avatar: URL.createObjectURL(file) } : null
-      );
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
       toast({
-        title: "Avatar updated",
-        description: "Your profile picture has been updated successfully.",
+        title: "Invalid file type",
+        description: "Please upload an image file.",
+        variant: "destructive",
       });
-    }, 2000);
+      return;
+    }
+
+    // Validate file size (e.g., 5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please upload an image smaller than 5MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      const result = await updateProfile(formData);
+      if (result) {
+        // Update the profile state with the new avatar URL
+        setProfile((prev) =>
+          prev ? { ...prev, avatar: result.user.avatar } : null
+        );
+      }
+    } catch (error) {
+      toast({
+        title: "Upload failed",
+        description: "Failed to update profile picture. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   if (isLoading) {
@@ -223,7 +255,9 @@ export default function ProfilePage({
               <div className="text-center">
                 <div className="relative w-32 h-32 mx-auto mb-4">
                   <Image
-                    src={profile.avatar}
+                    src={
+                      "http://localhost:6969/uploads/users/" + profile.avatar
+                    }
                     alt={`${profile.firstName}'s avatar`}
                     fill
                     className="rounded-full object-cover"
@@ -257,8 +291,16 @@ export default function ProfilePage({
                   {profile.firstName} {profile.lastName}
                 </h2>
                 <div className="flex items-center justify-center gap-2 mt-2">
-                  <Star className="w-5 h-5 text-yellow-500 fill-current" />
-                  <span className="font-medium">{profile.overallRating}</span>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`w-5 h-5 ${
+                        i < profile.overallRating
+                          ? "text-yellow-500 fill-current"
+                          : "text-gray-300"
+                      }`}
+                    />
+                  ))}
                 </div>
 
                 {isOwnProfile && (
@@ -327,16 +369,25 @@ export default function ProfilePage({
         {/* Right Column - Reviews */}
         <div className="md:col-span-2">
           <Card>
-            <CardHeader>
-              <CardTitle>Reviews</CardTitle>
-              <CardDescription>
-                What others are saying about {profile.firstName}
-              </CardDescription>
+            <CardHeader className="flex-row items-center justify-between mb-2">
+              <div>
+                <CardTitle>Reviews</CardTitle>
+                <CardDescription className="mt-1">
+                  What others are saying about {profile.firstName}
+                </CardDescription>
+              </div>
+              {!isOwnProfile && (
+                <div className="mb-6">
+                  <Button onClick={() => setShowReviewDialog(true)}>
+                    Write a Review
+                  </Button>
+                </div>
+              )}
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
                 {reviews.map((review) => (
-                  <ReviewCard key={review.id} review={review} />
+                  <ReviewCard key={review._id} review={review} />
                 ))}
               </div>
             </CardContent>
@@ -387,6 +438,7 @@ export default function ProfilePage({
             <div>
               <label className="text-sm font-medium">Contact Number</label>
               <Input
+                type="number"
                 value={editForm.contactNumber}
                 onChange={(e) =>
                   setEditForm({ ...editForm, contactNumber: e.target.value })
@@ -394,17 +446,17 @@ export default function ProfilePage({
               />
             </div>
 
-            {!profile.isVerified && (
-              <div>
-                <label className="text-sm font-medium">Email</label>
-                <Input
-                  value={editForm.email}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, email: e.target.value })
-                  }
-                />
-              </div>
-            )}
+            {/* {!profile.isVerified && (
+                <div>
+                  <label className="text-sm font-medium">Email</label>
+                  <Input
+                    value={editForm.email}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, email: e.target.value })
+                    }
+                  />
+                </div>
+              )} */}
           </div>
 
           <DialogFooter>
@@ -561,6 +613,13 @@ export default function ProfilePage({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Review Dialog */}
+      <ReviewDialog
+        isOpen={showReviewDialog}
+        onClose={() => setShowReviewDialog(false)}
+        onSubmit={handleReviewSubmit}
+      />
     </div>
   );
 }
@@ -571,18 +630,20 @@ interface ReviewCardProps {
 
 const ReviewCard = ({ review }: ReviewCardProps) => {
   return (
-    <div className="flex gap-4">
+    <div className="flex gap-4 w-full overflow-scroll">
       <div className="relative w-10 h-10 flex-shrink-0">
         <Image
-          src={review.reviewerAvatar}
-          alt={review.reviewerName}
+          src={"http://localhost:6969/uploads/users/" + review.reviewer.avatar}
+          alt={review.reviewer.firstName + " " + review.reviewer.lastName}
           fill
           className="rounded-full object-cover"
         />
       </div>
-      <div className="flex-1">
+      <div className="flex-1 w-[calc(100%-4rem)]">
         <div className="flex items-center justify-between">
-          <h4 className="font-medium">{review.reviewerName}</h4>
+          <h4 className="font-medium">
+            {review.reviewer.firstName + " " + review.reviewer.lastName}
+          </h4>
           <div className="flex items-center gap-1">
             {Array.from({ length: 5 }).map((_, i) => (
               <Star
@@ -596,7 +657,9 @@ const ReviewCard = ({ review }: ReviewCardProps) => {
             ))}
           </div>
         </div>
-        <p className="text-gray-600 mt-1">{review.comment}</p>
+        <p className="text-gray-600 mt-1 break-words text-wrap w-full">
+          {review.comment}
+        </p>
         <p className="text-sm text-gray-400 mt-1">
           {format(new Date(review.createdAt), "PPP")}
         </p>
@@ -672,5 +735,76 @@ const ProfileSkeleton = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+interface ReviewDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (rating: number, comment: string) => void;
+}
+
+const ReviewDialog = ({ isOpen, onClose, onSubmit }: ReviewDialogProps) => {
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Write a Review</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium">Rating</label>
+            <div className="flex gap-1 mt-1">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setRating(i + 1)}
+                  className="focus:outline-none"
+                >
+                  <Star
+                    className={`w-6 h-6 ${
+                      i < rating
+                        ? "text-yellow-500 fill-current"
+                        : "text-gray-300"
+                    }`}
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">Comment</label>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              rows={4}
+              placeholder="Write your review..."
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              onSubmit(rating, comment);
+              setRating(5);
+              setComment("");
+            }}
+            disabled={!comment.trim()}
+          >
+            Submit Review
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import Item from "../models/Item";
-import User from "../models/User";
 
 interface AuthRequest extends Request {
   user?: {
@@ -21,7 +20,7 @@ export const createItem = async (req: AuthRequest, res: Response) => {
       description,
       price,
       quantity,
-      categories,
+      categories: categories.split(","),
       images,
       seller: req.user!.id,
     });
@@ -71,7 +70,7 @@ export const getItem = async (req: Request, res: Response): Promise<void> => {
   try {
     const item = await Item.findById(req.params.id).populate(
       "seller",
-      "firstName lastName email overallRating"
+      "firstName lastName email overallRating avatar"
     );
 
     if (!item) {

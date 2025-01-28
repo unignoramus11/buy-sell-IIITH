@@ -1,10 +1,12 @@
 import { useState } from "react";
 import api from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const useProfile = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { user: currentUser } = useAuth();
 
   const getProfile = async (userId: string) => {
     setIsLoading(true);
@@ -14,9 +16,10 @@ export const useProfile = () => {
     } catch (error: any) {
       toast({
         title: "Failed to fetch profile",
-        description: error.response?.data?.message,
+        description: error.response?.data?.message || "Please try again later",
         variant: "destructive",
       });
+      return null;
     } finally {
       setTimeout(() => {
         setIsLoading(false);
@@ -25,7 +28,6 @@ export const useProfile = () => {
   };
 
   const updateProfile = async (formData: FormData) => {
-    setIsLoading(true);
     try {
       const { data } = await api.patch("/users/profile", formData, {
         headers: {
@@ -40,13 +42,10 @@ export const useProfile = () => {
     } catch (error: any) {
       toast({
         title: "Failed to update profile",
-        description: error.response?.data?.message,
+        description: error.response?.data?.message || "Please try again",
         variant: "destructive",
       });
-    } finally {
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 500);
+      return null;
     }
   };
 
@@ -54,9 +53,8 @@ export const useProfile = () => {
     currentPassword: string,
     newPassword: string
   ) => {
-    setIsLoading(true);
     try {
-      const { data } = await api.patch("/users/password", {
+      await api.patch("/users/password", {
         currentPassword,
         newPassword,
       });
@@ -64,17 +62,14 @@ export const useProfile = () => {
         title: "Password updated",
         description: "Your password has been updated successfully.",
       });
-      return data;
+      return true;
     } catch (error: any) {
       toast({
         title: "Failed to update password",
-        description: error.response?.data?.message,
+        description: error.response?.data?.message || "Please try again",
         variant: "destructive",
       });
-    } finally {
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 500);
+      return false;
     }
   };
 
@@ -83,7 +78,6 @@ export const useProfile = () => {
     rating: number,
     comment: string
   ) => {
-    setIsLoading(true);
     try {
       const { data } = await api.post(`/users/${userId}/reviews`, {
         rating,
@@ -97,13 +91,10 @@ export const useProfile = () => {
     } catch (error: any) {
       toast({
         title: "Failed to submit review",
-        description: error.response?.data?.message,
+        description: error.response?.data?.message || "Please try again",
         variant: "destructive",
       });
-    } finally {
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 500);
+      return null;
     }
   };
 
@@ -113,5 +104,6 @@ export const useProfile = () => {
     updatePassword,
     createReview,
     isLoading,
+    currentUser,
   };
 };

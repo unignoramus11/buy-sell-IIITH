@@ -10,17 +10,23 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, X } from "lucide-react";
 import { useItems } from "@/hooks/useItems";
+import { useImage } from "@/hooks/useImage";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Define types
 interface Item {
-  id: string;
+  _id: string;
   name: string;
   price: number;
+  quantity: number;
   description: string;
-  sellerName: string;
-  sellerEmail: string;
+  seller: {
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
   categories: string[];
-  imageUrl: string;
+  images: string[];
 }
 
 const categories = [
@@ -39,6 +45,7 @@ export default function ExplorePage() {
   const [filteredItems, setFilteredItems] = useState<Item[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const { user, isLoading: isAuthLoading } = useAuth();
 
   const { getItems, isLoading } = useItems();
 
@@ -68,6 +75,8 @@ export default function ExplorePage() {
         item.categories.some((cat) => selectedCategories.includes(cat))
       );
     }
+
+    result = result.filter((item) => !isAuthLoading && user && item.seller.email !== user.email);
 
     setFilteredItems(result);
   }, [items, searchQuery, selectedCategories]);
@@ -134,7 +143,7 @@ export default function ExplorePage() {
                   ))
               : filteredItems.map((item) => (
                   <motion.div
-                    key={item.id}
+                    key={item._id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 20 }}
@@ -161,27 +170,31 @@ export default function ExplorePage() {
 }
 
 function ItemCard({ item }: { item: Item }) {
+  const { src, error, isPlaceholder } = useImage(
+    "uploads/items/" + item.images[0]
+  );
+
   return (
-    <Link href={`/explore/item/${item.id}`}>
+    <Link href={`/explore/item/${item._id}`}>
       <CardContainer>
         <CardBody className="bg-white dark:bg-black border border-gray-200 dark:border-gray-800 relative group/card w-full rounded-xl p-6">
           <CardItem
             translateZ="50"
-            className="text-xl font-bold text-black dark:text-white"
+            className="text-xl font-bold text-black dark:text-white line-clamp-1"
           >
             {item.name}
           </CardItem>
 
           <CardItem
             translateZ="60"
-            className="text-neutral-500 text-sm mt-2 dark:text-neutral-300"
+            className="text-neutral-500 text-sm mt-2 dark:text-neutral-300 line-clamp-1"
           >
             {item.description}
           </CardItem>
 
           <CardItem translateZ="100" className="w-full mt-4">
             <Image
-              src={item.imageUrl}
+              src={"http://localhost:6969/uploads/items/" + item.images[0]}
               height={1000}
               width={1000}
               className="h-60 w-full object-cover rounded-xl group-hover/card:shadow-xl"
@@ -198,13 +211,13 @@ function ItemCard({ item }: { item: Item }) {
             </CardItem>
             <CardItem
               translateZ={20}
-              className="text-sm text-gray-500 dark:text-gray-400"
+              className="text-sm text-gray-500 dark:text-gray-400 text-right"
             >
-              by {item.sellerName}
+              by {item.seller.firstName} {item.seller.lastName}
             </CardItem>
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap gap-2 justify-center">
             {item.categories.map((category) => (
               <CardItem
                 key={category}

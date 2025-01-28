@@ -96,6 +96,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         lastName: user.lastName,
         email: user.email,
         isVerified: user.isVerified,
+        avatar: user.avatar,
       },
     });
   } catch (error) {

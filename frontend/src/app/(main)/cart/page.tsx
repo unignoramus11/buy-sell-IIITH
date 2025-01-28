@@ -29,12 +29,13 @@ import {
   MessageSquare,
   Check,
   X,
+  RefreshCcw,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { useCart } from "@/hooks/useCart";
 import { useOrders } from "@/hooks/useOrders";
-import router from "next/router";
+import { useRouter } from "next/navigation";
 import { ReCAPTCHA } from "@/components/recaptcha";
 
 interface CartItem {
@@ -45,6 +46,7 @@ interface CartItem {
   quantity: number;
   image: string;
   seller: {
+    id: string;
     name: string;
     email: string;
   };
@@ -60,15 +62,27 @@ export default function CartPage() {
   const [bargainMessage, setBargainMessage] = useState("");
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
   const { toast } = useToast();
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
-  const { getCart, bargainItem, isLoading } = useCart();
+  const {
+    getCart,
+    bargainItem,
+    isLoading,
+    removeFromCart: cartHooksRemoveFromCart,
+  } = useCart();
   const { createOrder } = useOrders();
 
   useEffect(() => {
     const fetchCart = async () => {
-      const cartItems = await getCart();
-      if (cartItems) {
-        setCartItems(cartItems);
+      try {
+        const cartItems = await getCart();
+        if (cartItems) {
+          setCartItems(cartItems);
+          setError(null);
+        }
+      } catch (error) {
+        setError("Failed to load cart items");
       }
     };
 
@@ -76,12 +90,14 @@ export default function CartPage() {
   }, []);
 
   const removeFromCart = async (itemId: string) => {
-    // Replace with actual API call
-    setCartItems((prev) => prev.filter((item) => item.id !== itemId));
-    toast({
-      title: "Item removed",
-      description: "Item has been removed from your cart.",
-    });
+    const success = await cartHooksRemoveFromCart(itemId);
+    if (success) {
+      // Refresh cart after removal
+      const updatedCart = await getCart();
+      if (updatedCart) {
+        setCartItems(updatedCart);
+      }
+    }
   };
 
   const inititateBargain = (item: CartItem) => {
@@ -94,15 +110,23 @@ export default function CartPage() {
   const submitBargain = async () => {
     if (!selectedItem || !bargainPrice || !bargainMessage) return;
 
-    const result = await bargainItem(
+    // Optimistically update UI
+    const updatedItems = cartItems.map((item) =>
+      item.id === selectedItem.id
+        ? { ...item, bargainStatus: "PENDING" as const }
+        : item
+    );
+    setCartItems(updatedItems);
+    setShowBargainDialog(false);
+
+    const success = await bargainItem(
       selectedItem.id,
       parseFloat(bargainPrice),
       bargainMessage
     );
 
-    if (result) {
-      setShowBargainDialog(false);
-      // Refresh cart
+    if (!success) {
+      // Revert optimistic update on failure
       const cartItems = await getCart();
       if (cartItems) {
         setCartItems(cartItems);
@@ -121,17 +145,28 @@ export default function CartPage() {
     }
 
     setIsOrdering(true);
-    const result = await createOrder(
-      cartItems.map((item) => item.id),
-      recaptchaToken
-    );
-    if (result) {
-      setCartItems([]);
-      setIsOrdering(false);
+    try {
+      const result = await createOrder(
+        cartItems.map((item) => item.id),
+        recaptchaToken
+      );
+
+      if (result) {
+        setCartItems([]);
+        toast({
+          title: "Order placed successfully",
+          description: "Check your orders page for OTP and delivery status.",
+        });
+        router.push("/orders");
+      }
+    } catch (error) {
       toast({
-        title: "Order placed successfully",
-        description: "Check your orders page for OTP and delivery status.",
+        title: "Failed to place order",
+        description: "Please try again later",
+        variant: "destructive",
       });
+    } finally {
+      setIsOrdering(false);
     }
   };
 
@@ -144,6 +179,19 @@ export default function CartPage() {
 
   if (isLoading) {
     return <CartSkeleton />;
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="text-center py-20">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Error loading cart</h2>
+          <p className="text-gray-500 mb-6">{error}</p>
+          <Button onClick={() => window.location.reload()}>Try Again</Button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -178,7 +226,26 @@ export default function CartPage() {
           <div className="lg:col-span-1">
             <Card>
               <CardHeader>
-                <CardTitle>Order Summary</CardTitle>
+                <CardTitle>
+                  <div className="flex justify-between items-center">
+                    <span>Order Summary</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const fetchCart = async () => {
+                          const cartItems = await getCart();
+                          if (cartItems) {
+                            setCartItems(cartItems);
+                          }
+                        };
+                        fetchCart();
+                      }}
+                    >
+                      <RefreshCcw className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -271,6 +338,8 @@ interface CartItemCardProps {
 }
 
 const CartItemCard = ({ item, onRemove, onBargain }: CartItemCardProps) => {
+  const router = useRouter();
+
   return (
     <Card>
       <CardContent className="p-6">
@@ -278,7 +347,7 @@ const CartItemCard = ({ item, onRemove, onBargain }: CartItemCardProps) => {
           {/* Item Image */}
           <div className="relative w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
             <Image
-              src={item.image}
+              src={"http://localhost:6969/uploads/items/" + item.image}
               alt={item.name}
               fill
               className="object-cover"
@@ -297,7 +366,14 @@ const CartItemCard = ({ item, onRemove, onBargain }: CartItemCardProps) => {
               </button>
             </div>
 
-            <p className="text-sm text-gray-500">Sold by: {item.seller.name}</p>
+            <p
+              className="text-sm text-gray-500 cursor-pointer"
+              onClick={() => {
+                router.push(`/profile/${item.seller.id}`);
+              }}
+            >
+              Sold by: {item.seller.name}
+            </p>
 
             {/* Price Section */}
             <div className="flex items-end justify-between">
@@ -338,7 +414,7 @@ const CartItemCard = ({ item, onRemove, onBargain }: CartItemCardProps) => {
               </div>
 
               {/* Bargain Button */}
-              {item.bargainStatus === "NONE" && (
+              {(item.bargainStatus === "NONE" || item.bargainStatus === "REJECTED") && (
                 <Button
                   variant="outline"
                   size="sm"

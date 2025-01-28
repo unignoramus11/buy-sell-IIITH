@@ -1,74 +1,212 @@
 import { useState } from "react";
 import api from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { set } from "date-fns";
+
+interface DashboardStats {
+  totalEarnings: number;
+  pendingOrdersCount: number;
+  completedOrdersCount: number;
+  salesData: {
+    date: string;
+    revenue: number;
+    bargainedRevenue: number;
+  }[];
+}
+
+interface Order {
+  id: string;
+  itemName: string;
+  itemImage: string;
+  buyer: {
+    name: string;
+    email: string;
+  };
+  originalPrice: number;
+  bargainedPrice: number | null;
+  status: "PENDING" | "BARGAINING" | "DELIVERED" | "CANCELLED";
+  date: string;
+  quantity: number;
+}
+
+interface BargainRequest {
+  id: string;
+  itemName: string;
+  itemImage: string;
+  buyer: {
+    name: string;
+    email: string;
+  };
+  originalPrice: number;
+  requestedPrice: number;
+  message: string;
+  cartItemId: string;
+}
 
 export const useSeller = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const getDashboardStats = async () => {
+  const getDashboardStats = async (): Promise<DashboardStats | null> => {
     setIsLoading(true);
     try {
-      const { data } = await api.get("/items/stats");
+      const { data } = await api.get("/seller/stats");
       return data;
     } catch (error: any) {
       toast({
         title: "Failed to fetch stats",
-        description: error.response?.data?.message,
+        description: error.response?.data?.message || "Please try again later",
         variant: "destructive",
       });
+      return null;
     } finally {
-      setIsLoading(false);
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 500);
+    }
+  };
+
+  const getOrders = async (status?: string): Promise<Order[]> => {
+    setIsLoading(true);
+    try {
+      const { data } = await api.get("/seller/orders", {
+        params: { status },
+      });
+      return data;
+    } catch (error: any) {
+      toast({
+        title: "Failed to fetch orders",
+        description: error.response?.data?.message || "Please try again later",
+        variant: "destructive",
+      });
+      return [];
+    } finally {
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 500);
+    }
+  };
+
+  const completeDelivery = async (orderId: string, otp: string) => {
+    try {
+      const { data } = await api.post(`/seller/orders/${orderId}/complete`, {
+        otp,
+      });
+      toast({
+        title: "Delivery completed",
+        description: "Order has been marked as delivered",
+      });
+      return true;
+    } catch (error: any) {
+      toast({
+        title: "Failed to complete delivery",
+        description: error.response?.data?.message || "Invalid OTP",
+        variant: "destructive",
+      });
+      return false;
     }
   };
 
   const getSellerItems = async () => {
-    setIsLoading(true);
     try {
-      const { data } = await api.get("/items/seller");
+      const { data } = await api.get("/seller/items");
       return data;
     } catch (error: any) {
       toast({
-        title: "Failed to fetch items",
-        description: error.response?.data?.message,
+        title: "Failed to fetch listings",
+        description: error.response?.data?.message || "Please try again later",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
+      return [];
     }
   };
 
-  const handleBargainRequest = async (
-    cartItemId: string,
-    action: "accept" | "reject" | "counter",
-    counterPrice?: number
-  ) => {
-    setIsLoading(true);
+  const verifyDelivery = async (orderId: string, otp: string) => {
     try {
-      const { data } = await api.post(`/cart/${cartItemId}/bargain-response`, {
-        action,
-        counterPrice,
+      const { data } = await api.post(`/seller/orders/${orderId}/complete`, {
+        otp,
       });
       toast({
-        title: "Bargain request handled",
-        description: `Bargain request ${action}ed successfully.`,
+        title: "Delivery completed",
+        description: "Order has been marked as delivered successfully.",
       });
+      return true;
+    } catch (error: any) {
+      toast({
+        title: "Verification failed",
+        description: error.response?.data?.message || "Invalid OTP",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
+  const getBargainRequests = async (): Promise<BargainRequest[]> => {
+    try {
+      const { data } = await api.get("/seller/bargain-requests");
       return data;
     } catch (error: any) {
       toast({
-        title: "Failed to handle bargain",
-        description: error.response?.data?.message,
+        title: "Failed to fetch bargain requests",
+        description: error.response?.data?.message || "Please try again later",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
+      return [];
+    }
+  };
+
+  const respondToBargain = async (cartItemId: string, accept: boolean) => {
+    try {
+      const { data } = await api.post(
+        `/seller/bargain-requests/${cartItemId}`,
+        {
+          accept,
+        }
+      );
+      toast({
+        title: accept ? "Bargain accepted" : "Bargain rejected",
+        description: accept
+          ? "The price has been updated"
+          : "The bargain request has been rejected",
+      });
+      return true;
+    } catch (error: any) {
+      toast({
+        title: "Failed to respond to bargain",
+        description: error.response?.data?.message || "Please try again",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
+  const cancelOrder = async (orderId: string) => {
+    try {
+      const { data } = await api.post(`/seller/orders/${orderId}/cancel`);
+      toast({
+        title: "Order cancelled",
+        description: "The order has been cancelled successfully",
+      });
+      return true;
+    } catch (error: any) {
+      toast({
+        title: "Failed to cancel order",
+        description: error.response?.data?.message || "Please try again",
+        variant: "destructive",
+      });
+      return false;
     }
   };
 
   return {
     getDashboardStats,
-    getSellerItems,
-    handleBargainRequest,
+    getOrders,
+    completeDelivery,
     isLoading,
+    getSellerItems,
+    verifyDelivery,
+    getBargainRequests,
+    respondToBargain,
+    cancelOrder,
   };
 };

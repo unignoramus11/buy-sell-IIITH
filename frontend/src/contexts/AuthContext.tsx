@@ -3,7 +3,14 @@ import { createContext, useContext, useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 
 interface AuthContextType {
-  user: any;
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    isVerified: boolean;
+    avatar: string;
+  } | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   logout: () => void;
@@ -67,22 +74,3 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 };
 
 export const useAuth = () => useContext(AuthContext);
-
-// TODO: Example usage in a protected component
-// const ProtectedComponent = () => {
-//   const { user, isAuthenticated, isLoading } = useAuth();
-
-//   if (isLoading) {
-//     return <div>Loading...</div>;
-//   }
-
-//   if (!isAuthenticated) {
-//     return null; // The AuthProvider will handle redirect
-//   }
-
-//   return (
-//     <div>
-//       Welcome, {user.firstName}!
-//     </div>
-//   );
-// };

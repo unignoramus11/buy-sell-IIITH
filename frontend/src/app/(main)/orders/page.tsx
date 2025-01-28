@@ -8,173 +8,118 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Clock,
-  CheckCircle2,
-  XCircle,
-  RefreshCcw,
-  Copy,
-  Eye,
-  EyeOff,
-} from "lucide-react";
+import { Clock, CheckCircle2, XCircle, RefreshCcw } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useOrders } from "@/hooks/useOrders";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
-interface Order {
-  id: string;
-  itemID: string;
-  itemName: string;
-  itemImage: string;
+interface Item {
+  _id: string;
+  name: string;
+  description: string;
   price: number;
   quantity: number;
+  images: string[];
+  categories: string[];
+  seller: string;
+  isAvailable: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface User {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+interface Order {
+  _id: string;
+  item: Item;
+  buyer: User;
+  seller: User;
+  quantity: number;
+  price: number;
+  bargainedPrice?: number;
   status: "PENDING" | "DELIVERED" | "CANCELLED";
-  date: string;
   otp?: string;
   otpExpiry?: string;
-  buyer: {
-    name: string;
-    email: string;
-  };
-  seller: {
-    name: string;
-    email: string;
-  };
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function OrdersPage() {
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [activeTab, setActiveTab] = useState("pending");
   const [orders, setOrders] = useState<Order[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [showOTP, setShowOTP] = useState(false);
+  const { getOrders, regenerateOTP, isLoading, cancelOrder } = useOrders();
   const { toast } = useToast();
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [activeTab]);
 
   const fetchOrders = async () => {
-    setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setOrders([
-        {
-          id: "1",
-          itemID: "1",
-          itemName: "MacBook Pro M1",
-          itemImage: "/images/test.png",
-          price: 85000,
-          quantity: 1,
-          status: "PENDING",
-          date: new Date().toISOString(),
-          otp: "123456",
-          otpExpiry: new Date(Date.now() + 5 * 60000).toISOString(), // 5 minutes
-          buyer: {
-            name: "John Doe",
-            email: "john.doe@iiit.ac.in",
-          },
-          seller: {
-            name: "Jane Smith",
-            email: "jane.smith@iiit.ac.in",
-          },
-        },
-        {
-          id: "1",
-          itemID: "1",
-          itemName: "MacBook Pro M1",
-          itemImage: "/images/test.png",
-          price: 85000,
-          quantity: 1,
-          status: "DELIVERED",
-          date: new Date().toISOString(),
-          otp: "123456",
-          otpExpiry: new Date(Date.now() + 5 * 60000).toISOString(), // 5 minutes
-          buyer: {
-            name: "John Doe",
-            email: "john.doe@iiit.ac.in",
-          },
-          seller: {
-            name: "Jane Smith",
-            email: "jane.smith@iiit.ac.in",
-          },
-        },
-        {
-          id: "1",
-          itemID: "1",
-          itemName: "MacBook Pro M1",
-          itemImage: "/images/test.png",
-          price: 85000,
-          quantity: 1,
-          status: "CANCELLED",
-          date: new Date().toISOString(),
-          otp: "123456",
-          otpExpiry: new Date(Date.now() + 5 * 60000).toISOString(), // 5 minutes
-          buyer: {
-            name: "John Doe",
-            email: "john.doe@iiit.ac.in",
-          },
-          seller: {
-            name: "Jane Smith",
-            email: "jane.smith@iiit.ac.in",
-          },
-        },
-        // Add more sample orders...
-      ]);
-      setIsLoading(false);
-    }, 1000);
+    let status;
+    switch (activeTab) {
+      case "pending":
+        status = "PENDING";
+        break;
+      case "delivered":
+        status = "DELIVERED";
+        break;
+      case "cancelled":
+        status = "CANCELLED";
+        break;
+      default:
+        status = undefined;
+    }
+
+    const data = await getOrders(status);
+    if (data) {
+      setOrders(data);
+    }
   };
 
-  const regenerateOTP = async (orderId: string) => {
-    // Replace with actual API call
-    toast({
-      title: "OTP Regenerated",
-      description:
-        "New OTP has been generated and will be visible for 5 seconds.",
-    });
-    // Update orders with new OTP
-    setOrders((prev) =>
-      prev.map((order) =>
-        order.id === orderId
-          ? {
-              ...order,
-              otp: Math.floor(100000 + Math.random() * 900000).toString(),
-              otpExpiry: new Date(Date.now() + 5 * 60000).toISOString(),
-            }
-          : order
-      )
-    );
-  };
-
-  const copyOTP = (otp: string) => {
-    navigator.clipboard.writeText(otp);
-    toast({
-      title: "OTP Copied",
-      description: "OTP has been copied to clipboard.",
-    });
+  const handleRegenerateOTP = async (orderId: string) => {
+    const result = await regenerateOTP(orderId);
+    if (result) {
+      fetchOrders();
+    }
   };
 
   const getFilteredOrders = (type: string) => {
-    const userEmail = "john.doe@iiit.ac.in"; // Replace with actual user email
     switch (type) {
       case "pending":
-        return orders.filter(
-          (order) =>
-            order.status === "PENDING" && order.buyer.email === userEmail
-        );
-      case "bought":
-        return orders.filter(
-          (order) =>
-            order.buyer.email === userEmail && order.status !== "PENDING"
-        );
-      case "sold":
-        return orders.filter((order) => order.seller.email === userEmail);
+        return orders.filter((order) => order.status === "PENDING");
+      case "delivered":
+        return orders.filter((order) => order.status === "DELIVERED");
+      case "cancelled":
+        return orders.filter((order) => order.status === "CANCELLED");
       default:
         return [];
+    }
+  };
+
+  const handleCancelOrder = async (orderId: string) => {
+    const result = await cancelOrder(orderId);
+    if (result) {
+      toast({
+        title: "Order cancelled",
+        description: "The order has been cancelled successfully.",
+      });
+      fetchOrders();
     }
   };
 
@@ -183,98 +128,70 @@ export default function OrdersPage() {
       <h1 className="text-3xl font-bold mb-8">Orders</h1>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 mb-8">
+        <TabsList className="grid w-full grid-cols-3 mb-8">
           <TabsTrigger value="pending" className="relative">
-            Pending Orders
+            Pending
             {getFilteredOrders("pending").length > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                 {getFilteredOrders("pending").length}
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="bought">Purchase History</TabsTrigger>
+          <TabsTrigger value="delivered">Delivered</TabsTrigger>
+          <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
         </TabsList>
 
-        <AnimatePresence mode="wait">
-          {["pending", "bought", "sold"].map((tab) => (
-            <TabsContent key={tab} value={tab}>
-              {isLoading ? (
-                <OrdersSkeleton />
-              ) : (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                >
-                  {getFilteredOrders(tab).map((order) => (
-                    <OrderCard
-                      key={order.id}
-                      order={order}
-                      type={tab as "pending" | "bought" | "sold"}
-                      onRegenerateOTP={regenerateOTP}
-                      onCopyOTP={copyOTP}
-                      onShowOTP={() => {
-                        setSelectedOrder(order);
-                        setShowOTP(true);
-                        // Auto-hide OTP after 5 seconds
-                        setTimeout(() => setShowOTP(false), 5000);
-                      }}
-                    />
-                  ))}
-                </motion.div>
-              )}
-            </TabsContent>
-          ))}
+        <AnimatePresence mode="wait" key={activeTab}>
+          <TabsContent value={activeTab}>
+            {isLoading ? (
+              <OrdersSkeleton />
+            ) : (
+              <motion.div
+                key={`orders-${activeTab}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              >
+                {getFilteredOrders(activeTab).map((order) => (
+                  <OrderCard
+                    key={`order-${order._id}-${activeTab}`}
+                    order={order}
+                    type={activeTab as "pending" | "bought"}
+                    onRegenerateOTP={handleRegenerateOTP}
+                    onCancelOrder={handleCancelOrder}
+                  />
+                ))}
+              </motion.div>
+            )}
+          </TabsContent>
         </AnimatePresence>
       </Tabs>
-
-      {/* OTP Dialog */}
-      <Dialog open={showOTP} onOpenChange={setShowOTP}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Order OTP</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-center text-2xl font-mono font-bold">
-              {selectedOrder?.otp}
-            </p>
-            <p className="text-center text-sm text-gray-500">
-              This OTP will be hidden in{" "}
-              {Math.ceil(
-                (new Date(selectedOrder?.otpExpiry || "").getTime() -
-                  Date.now()) /
-                  1000
-              )}{" "}
-              seconds
-            </p>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
-
-// Continue in the same file or create separate components
 
 interface OrderCardProps {
   order: Order;
   type: "pending" | "bought" | "sold";
   onRegenerateOTP: (orderId: string) => void;
-  onCopyOTP: (otp: string) => void;
-  onShowOTP: () => void;
+  onCancelOrder: (orderId: string) => Promise<void>;
 }
 
 const OrderCard = ({
   order,
   type,
   onRegenerateOTP,
-  onCopyOTP,
-  onShowOTP,
+  onCancelOrder,
 }: OrderCardProps) => {
   const router = useRouter();
-  const [isOTPVisible, setIsOTPVisible] = useState(false);
-  const isOTPExpired = new Date(order.otpExpiry || "").getTime() < Date.now();
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  const handleCancel = async () => {
+    setIsCancelling(true);
+    await onCancelOrder(order._id);
+    setIsCancelling(false);
+  };
 
   const getStatusColor = (status: Order["status"]) => {
     switch (status) {
@@ -301,15 +218,15 @@ const OrderCard = ({
   };
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardHeader
         className="p-0 cursor-pointer"
-        onClick={() => router.push(`/explore/item/${order.itemID}`)}
+        onClick={() => router.push(`/explore/item/${order.item._id}`)}
       >
         <div className="relative h-48 w-full">
           <Image
-            src={order.itemImage}
-            alt={order.itemName}
+            src={"http://localhost:6969/uploads/items/" + order.item.images[0]}
+            alt={order.item.name}
             fill
             className="object-cover"
           />
@@ -325,102 +242,105 @@ const OrderCard = ({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="p-6">
-        <div className="space-y-4">
+      <CardContent className="p-6 flex-col flex flex-1">
+        <div className="space-y-6 h-full flex flex-col justify-between">
           <div
-            className="cursor-pointer"
-            onClick={() => router.push(`/explore/item/${order.itemID}`)}
+            className="cursor-pointer space-y-6"
+            onClick={() => router.push(`/explore/item/${order.item._id}`)}
           >
             <div>
-              <h3 className="font-semibold text-lg">{order.itemName}</h3>
+              <h3 className="font-semibold text-lg line-clamp-1">
+                {order.item.name}
+              </h3>
               <p className="text-sm text-gray-500">
-                {format(new Date(order.date), "PPP")}
+                {format(new Date(order.createdAt), "PPP")}
               </p>
             </div>
             <div className="flex justify-between items-center">
               <div>
                 <p className="text-sm text-gray-500">Price</p>
-                <p className="font-semibold">₹{order.price.toLocaleString()}</p>
+                <div className="flex items-center gap-2">
+                  {order.bargainedPrice &&
+                    order.bargainedPrice !== order.price && (
+                      <span className="text-sm text-gray-500 line-through">
+                        ₹{order.price.toLocaleString()}
+                      </span>
+                    )}
+                  <span className="text-lg font-bold">
+                    ₹{(order.bargainedPrice ?? order.price).toLocaleString()}
+                  </span>
+                </div>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Quantity</p>
                 <p className="font-semibold text-right">{order.quantity}</p>
               </div>
             </div>
-            <div>
+            <div className="overflow-hidden">
               <p className="text-sm text-gray-500">
                 {type === "sold" ? "Buyer" : "Seller"}
               </p>
               <p className="font-medium">
-                {type === "sold" ? order.buyer.name : order.seller.name}
+                {type === "sold"
+                  ? order.buyer.firstName + " " + order.buyer.lastName
+                  : order.seller.firstName + " " + order.seller.lastName}
               </p>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 ">
                 {type === "sold" ? order.buyer.email : order.seller.email}
               </p>
             </div>
           </div>
+        </div>
+        {/* OTP Section for Pending Orders */}
+        {type === "pending" && order.status === "PENDING" && (
+          <div className="space-y-2 mt-4">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => onRegenerateOTP(order._id)}
+              >
+                <RefreshCcw className="w-4 h-4 mr-2" />
+                Regenerate OTP
+              </Button>
 
-          {/* OTP Section for Pending Orders */}
-          {type === "pending" && order.status === "PENDING" && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">Order OTP</p>
-                {!isOTPExpired && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
                   <Button
-                    variant="ghost"
+                    variant="destructive"
                     size="sm"
-                    onClick={() => setIsOTPVisible(!isOTPVisible)}
+                    disabled={isCancelling}
                   >
-                    {isOTPVisible ? (
-                      <EyeOff className="w-4 h-4" />
+                    {isCancelling ? (
+                      <>
+                        <RefreshCcw className="w-4 h-4 mr-2 animate-spin" />
+                        Cancelling...
+                      </>
                     ) : (
-                      <Eye className="w-4 h-4" />
+                      "Cancel Order"
                     )}
                   </Button>
-                )}
-              </div>
-
-              {isOTPExpired ? (
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => onRegenerateOTP(order.id)}
-                  >
-                    <RefreshCcw className="w-4 h-4 mr-2" />
-                    Regenerate OTP
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 font-mono font-bold text-lg bg-gray-50 rounded-md p-2 text-center">
-                    {isOTPVisible ? order.otp : "******"}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => order.otp && onCopyOTP(order.otp)}
-                  >
-                    <Copy className="w-4 h-4" />
-                  </Button>
-                </div>
-              )}
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Cancel Order</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to cancel this order? This action
+                      cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>No, keep order</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleCancel}>
+                      Yes, cancel order
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
-          )}
-
-          {/* Action Buttons */}
-          {type === "sold" && order.status === "PENDING" && (
-            <div className="flex gap-2">
-              <Button className="flex-1" onClick={onShowOTP}>
-                Complete Delivery
-              </Button>
-              <Button variant="outline" className="flex-1">
-                Cancel Order
-              </Button>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

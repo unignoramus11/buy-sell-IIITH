@@ -4,6 +4,7 @@ import {
   getOrders,
   verifyDelivery,
   regenerateOTP,
+  cancelOrder,
 } from "../controllers/orderController";
 import { auth } from "../middleware/auth";
 
@@ -13,5 +14,6 @@ router.post("/", auth, createOrder);
 router.get("/", auth, getOrders);
 router.post("/verify-delivery", auth, verifyDelivery);
 router.post("/:id/regenerate-otp", auth, regenerateOTP);
+router.post("/:id/cancel", auth, cancelOrder);
 
 export default router;

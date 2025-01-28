@@ -154,3 +154,28 @@ export const bargainItem = async (
     res.status(500).json({ message: "Server error", error });
   }
 };
+
+export const getCartCount = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const count = await CartItem.countDocuments({ user: req.user!.id });
+    res.json({ count });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+export const checkItemInCart = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const itemId = req.params.itemId;
+    const inCart = await CartItem.exists({ user: req.user!.id, item: itemId });
+    res.json({ inCart });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};

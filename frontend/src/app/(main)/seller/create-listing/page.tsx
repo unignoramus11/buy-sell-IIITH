@@ -49,10 +49,9 @@ export default function CreateListing() {
   const [images, setImages] = useState<File[]>([]);
   const [imagesPreviews, setImagesPreviews] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const router = useRouter();
   const { toast } = useToast();
   const { createItem } = useItems();
+  const router = useRouter();
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -97,29 +96,6 @@ export default function CreateListing() {
     maxFiles: 5 - images.length,
   });
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length + images.length > 5) {
-      toast({
-        title: "Too many images",
-        description: "You can upload a maximum of 5 images.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setImages((prev) => [...prev, ...files]);
-
-    // Create previews
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagesPreviews((prev) => [...prev, reader.result as string]);
-      };
-      reader.readAsDataURL(file);
-    });
-  };
-
   const removeImage = (index: number) => {
     setImages((prev) => prev.filter((_, i) => i !== index));
     setImagesPreviews((prev) => prev.filter((_, i) => i !== index));
@@ -138,27 +114,25 @@ export default function CreateListing() {
 
     setIsSubmitting(true);
 
-    const formData = new FormData();
-    Object.entries(formData).forEach(([key, value]) => {
-      if (key !== "images") {
-        formData.append(key, value);
-      }
-    });
+    const newFormData = new FormData();
+    newFormData.append("name", formData.name);
+    newFormData.append("description", formData.description);
+    newFormData.append("price", formData.price);
+    newFormData.append("quantity", formData.quantity);
+    newFormData.append("categories", formData.categories.join(","));
 
     // Append each image
     images.forEach((image) => {
-      formData.append("itemImages", image);
+      newFormData.append("itemImages", image);
     });
 
-    // Append categories as JSON string
-    formData.append("categories", JSON.stringify(formData.categories));
-
-    const result = await createItem(formData);
+    const result = await createItem(newFormData);
     if (result) {
       toast({
         title: "Listing created",
         description: "Your item has been listed successfully.",
       });
+      router.push("/seller/dashboard");
     } else {
       toast({
         title: "Error",

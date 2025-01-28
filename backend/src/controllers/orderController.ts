@@ -193,3 +193,38 @@ export const regenerateOTP = async (
     res.status(500).json({ message: "Server error", error });
   }
 };
+
+export const cancelOrder = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const order = await Order.findOne({
+      _id: req.params.id,
+      buyer: req.user!.id,
+      status: "PENDING",
+    });
+
+    if (!order) {
+      res.status(404).json({ message: "Order not found" });
+      return;
+    }
+
+    // Update item quantity
+    const item = await Item.findById(order.item);
+    if (!item) {
+      res.status(404).json({ message: "Item not found" });
+      return;
+    }
+    item.quantity += order.quantity;
+    item.isAvailable = true;
+    await item.save();
+
+    order.status = "CANCELLED";
+    await order.save();
+
+    res.json({ message: "Order cancelled successfully", order });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};

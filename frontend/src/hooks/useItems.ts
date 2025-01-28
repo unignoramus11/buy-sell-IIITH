@@ -9,18 +9,24 @@ export const useItems = () => {
   const createItem = async (formData: FormData) => {
     setIsLoading(true);
     try {
-      const { data } = await api.post("/items", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      const quantity = formData.get("quantity");
+      const name = formData.get("name");
+      for (let i = 0; i < Number(quantity); i++) {
+        formData.set("quantity", "1");
+        formData.set("name", `${name} (${i + 1}/${quantity})`);
+        const { data } = await api.post("/items", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+      }
 
       toast({
         title: "Item created",
         description: "Your item has been listed successfully.",
       });
 
-      return data.item;
+      return true;
     } catch (error: any) {
       toast({
         title: "Failed to create item",

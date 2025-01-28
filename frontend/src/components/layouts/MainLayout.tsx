@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import ProtectedRoute from "../ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCart } from "@/hooks/useCart";
+import { ChatButton } from "../ChatButton";
 
 const MainLayout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
@@ -36,6 +38,17 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
     pathname.startsWith("/seller")
   );
   const { user, logout, isLoading: authLoading, isAuthenticated } = useAuth();
+  const { getCartCount } = useCart();
+  const [cartCount, setCartCount] = useState(0);
+
+  useEffect(() => {
+    const fetchCartCount = async () => {
+      const count = await getCartCount();
+      setCartCount(count);
+    };
+
+    fetchCartCount();
+  }, [getCartCount]);
 
   // Handle screen resize
   useEffect(() => {
@@ -68,7 +81,7 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
       >
         {/* Header */}
         <header
-          className={`fixed top-0 right-0 w-full md:w-[calc(100%-280px)] h-16 z-50 backdrop-blur-md border-b flex items-center justify-between px-4 transition-all duration-300 ${
+          className={`fixed top-0 right-0 w-full md:w-[calc(100%-300px)] h-16 z-50 backdrop-blur-md border-b flex items-center justify-between px-4 transition-all duration-300 ${
             isSellerMode
               ? "bg-black/75 border-white/10"
               : "bg-white/75 border-black/10"
@@ -88,6 +101,10 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
           </div>
 
           <div className="flex items-center gap-6">
+            <Link href="/chat">
+              <ChatButton />
+            </Link>
+
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">
                 {isSellerMode ? "Seller Mode" : "Buyer Mode"}
@@ -109,7 +126,7 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
                 >
                   <LucideShoppingCart size={24} />
                   <span className="absolute top-0 right-0 bg-black text-white dark:bg-white dark:text-black text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    3
+                    {cartCount}
                   </span>
                 </motion.div>
               </Link>
@@ -121,11 +138,13 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
         <AnimatePresence mode="wait">
           {isSidebarOpen && (
             <motion.nav
-              initial={{ x: -280 }}
+              initial={{ x: -300 }}
               animate={{ x: 0 }}
-              exit={{ x: -280 }}
+              exit={{ x: -300 }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className={`fixed left-0 top-0 h-full w-[280px] z-40 border-r flex flex-col transition-colors duration-300 ${
+              className={`fixed left-0 ${
+                isMobile ? "top-16 h-[calc(100%-64px)]" : "top-0 h-full"
+              } w-[300px] z-40 border-r flex flex-col transition-colors duration-300 ${
                 isSellerMode
                   ? "bg-black border-white/10"
                   : "bg-white border-black/10"
@@ -133,7 +152,7 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
             >
               {/* Logo Section */}
               <div
-                className={`h-16 flex items-center justify-center border-b transition-colors duration-300 ${
+                className={`h-16 flex items-center justify-center border-b transition-colors duration-300 z-50 ${
                   isSellerMode ? "border-white/10" : "border-black/10"
                 }`}
               >
@@ -166,23 +185,46 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
                       }`}
                     >
                       <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        className={`w-10 h-10 rounded-full flex items-center justify-center overflow-hidden ${
                           isSellerMode ? "bg-white/10" : "bg-black/10"
                         }`}
                       >
-                        <User size={20} />
+                        {user?.avatar ? (
+                          <img
+                            src={
+                              "http://localhost:6969/uploads/users/" +
+                              user.avatar
+                            }
+                            alt="User avatar"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <User size={20} />
+                        )}
                       </div>
                       <div>
                         <p className="font-medium">
-                          {!authLoading && isAuthenticated && user.firstName}{" "}
-                          {!authLoading && isAuthenticated && user.lastName}
+                          {!authLoading &&
+                            isAuthenticated &&
+                            user &&
+                            user.firstName}{" "}
+                          {!authLoading &&
+                            isAuthenticated &&
+                            user &&
+                            user.lastName}
                         </p>
                         <p
                           className={`text-sm ${
                             isSellerMode ? "text-gray-400" : "text-gray-600"
                           }`}
                         >
-                          {!authLoading && isAuthenticated && user.email}
+                          {!authLoading &&
+                            isAuthenticated &&
+                            user &&
+                            user.email.split("@")[0] +
+                              (user.email.split("@")[1] === "iiit.ac.in"
+                                ? ""
+                                : "@" + user.email.split("@")[1].split(".")[0])}
                         </p>
                       </div>
                     </div>
@@ -235,7 +277,7 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
         {/* Main Content */}
         <main
           className={`transition-all duration-300 ${
-            isSidebarOpen ? "md:ml-[280px]" : "ml-0"
+            isSidebarOpen ? "md:ml-[300px]" : "ml-0"
           } pt-16`}
         >
           <AnimatePresence mode="wait">

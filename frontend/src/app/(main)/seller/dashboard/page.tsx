@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, use } from "react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -33,6 +34,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -48,7 +50,13 @@ import {
   Loader2,
 } from "lucide-react";
 import { useSeller } from "@/hooks/useSeller";
-import { useOrders } from "@/hooks/useOrders";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSeparator,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
 
 interface SalesData {
   date: string;
@@ -56,39 +64,95 @@ interface SalesData {
   bargainedRevenue: number;
 }
 
-interface PendingOrder {
+interface Order {
   id: string;
   itemName: string;
+  itemImage: string;
   buyer: {
     name: string;
     email: string;
   };
   originalPrice: number;
   bargainedPrice: number | null;
-  status: "PENDING" | "BARGAINING";
+  status: "PENDING" | "DELIVERED" | "CANCELLED" | "BARGAINING";
   date: string;
 }
 
+interface Listing {
+  _id: string;
+  name: string;
+  price: number;
+  images: string[];
+  quantity: number;
+  isAvailable: boolean;
+  createdAt: string;
+}
+
+interface BargainRequest {
+  id: string;
+  itemName: string;
+  itemImage: string;
+  buyer: {
+    name: string;
+    email: string;
+  };
+  originalPrice: number;
+  requestedPrice: number;
+  message: string;
+  cartItemId: string;
+}
+
 export default function SellerDashboard() {
+  const router = useRouter();
   const [salesData, setSalesData] = useState<SalesData[]>([]);
-  const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
   const [totalEarnings, setTotalEarnings] = useState(0);
-  const [selectedOrder, setSelectedOrder] = useState<PendingOrder | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showOTPDialog, setShowOTPDialog] = useState(false);
   const [otp, setOTP] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [counterOffer, setCounterOffer] = useState("");
   const { toast } = useToast();
-  const { getDashboardStats, getSellerItems, handleBargainRequest } =
-    useSeller();
-  const { verifyDelivery } = useOrders();
+  const {
+    getDashboardStats,
+    getOrders,
+    getSellerItems,
+    verifyDelivery,
+    cancelOrder,
+    respondToBargain,
+    getBargainRequests,
+  } = useSeller();
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [activeTab, setActiveTab] = useState("pending");
+  const [orders, setOrders] = useState<{
+    pending: Order[];
+    delivered: Order[];
+    cancelled: Order[];
+  }>({
+    pending: [],
+    delivered: [],
+    cancelled: [],
+  });
+  const [bargainRequests, setBargainRequests] = useState<BargainRequest[]>([]);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       setIsLoading(true);
-      const [stats, items] = await Promise.all([
+      const [
+        stats,
+        pendingOrders,
+        deliveredOrders,
+        cancelledOrders,
+        sellerListings,
+        bargainRequests,
+      ] = await Promise.all([
         getDashboardStats(),
+        getOrders("PENDING"),
+        getOrders("DELIVERED"),
+        getOrders("CANCELLED"),
         getSellerItems(),
+        getBargainRequests(),
       ]);
 
       if (stats) {
@@ -96,63 +160,90 @@ export default function SellerDashboard() {
         setTotalEarnings(stats.totalEarnings);
       }
 
-      if (items) {
-        const pendingOrders = items.filter(
-          (item: any) => item.status === "PENDING" || item.hasBargainRequests
-        );
-        setPendingOrders(pendingOrders);
-      }
+      setOrders({
+        pending: pendingOrders,
+        delivered: deliveredOrders,
+        cancelled: cancelledOrders,
+      });
+
+      setListings(sellerListings);
+      setBargainRequests(bargainRequests);
       setIsLoading(false);
     };
 
     fetchDashboardData();
   }, []);
 
+  const handleCancelOrder = async () => {
+    if (!orderToCancel) return;
+
+    const success = await cancelOrder(orderToCancel.id);
+    if (success) {
+      toast({
+        title: "Order cancelled",
+        description: "The order has been cancelled successfully.",
+      });
+      refreshOrders();
+    }
+    setShowCancelDialog(false);
+    setOrderToCancel(null);
+  };
+
+  const handleBargainResponse = async (cartItemId: string, accept: boolean) => {
+    const success = await respondToBargain(cartItemId, accept);
+    if (success) {
+      toast({
+        title: accept ? "Bargain accepted" : "Bargain rejected",
+        description: accept
+          ? "The bargain request has been accepted"
+          : "The bargain request has been rejected",
+      });
+      // Refresh bargain requests
+      const newRequests = await getBargainRequests();
+      setBargainRequests(newRequests);
+    }
+  };
+
   const handleDelivery = async (orderId: string) => {
     setShowOTPDialog(true);
     setSelectedOrder(
-      pendingOrders.find((order) => order.id === orderId) || null
+      orders["pending"].find((order) => order.id === orderId) || null
     );
   };
 
   const verifyOTP = async () => {
     if (!selectedOrder || !otp) return;
 
-    const result = await verifyDelivery(selectedOrder.id, otp);
-    if (result) {
+    const success = await verifyDelivery(selectedOrder.id, otp);
+    if (success) {
       setShowOTPDialog(false);
       setOTP("");
-      // Refresh dashboard data
-      const items = await getSellerItems();
-      if (items) {
-        const pendingOrders = items.filter(
-          (item: any) => item.status === "PENDING" || item.hasBargainRequests
-        );
-        setPendingOrders(pendingOrders);
-      }
+      // Refresh orders
+      const [pendingOrders, deliveredOrders, cancelledOrders] =
+        await Promise.all([
+          getOrders("PENDING"),
+          getOrders("DELIVERED"),
+          getOrders("CANCELLED"),
+        ]);
+
+      setOrders({
+        pending: pendingOrders,
+        delivered: deliveredOrders,
+        cancelled: cancelledOrders,
+      });
     }
   };
 
-  const handleBargain = async (
-    orderId: string,
-    action: "accept" | "reject" | "counter"
-  ) => {
-    const result = await handleBargainRequest(
-      orderId,
-      action,
-      action === "counter" ? parseFloat(counterOffer) : undefined
+  const refreshOrders = async () => {
+    const [pendingOrders, deliveredOrders, cancelledOrders] = await Promise.all(
+      [getOrders("PENDING"), getOrders("DELIVERED"), getOrders("CANCELLED")]
     );
 
-    if (result) {
-      // Refresh pending orders
-      const items = await getSellerItems();
-      if (items) {
-        const pendingOrders = items.filter(
-          (item: any) => item.status === "PENDING" || item.hasBargainRequests
-        );
-        setPendingOrders(pendingOrders);
-      }
-    }
+    setOrders({
+      pending: pendingOrders,
+      delivered: deliveredOrders,
+      cancelled: cancelledOrders,
+    });
   };
 
   if (isLoading) {
@@ -170,12 +261,12 @@ export default function SellerDashboard() {
         />
         <StatsCard
           title="Pending Orders"
-          value={pendingOrders.length.toString()}
+          value={orders["pending"].length.toString()}
           icon={<Clock className="w-6 h-6" />}
         />
         <StatsCard
           title="Completed Orders"
-          value="25"
+          value={orders["delivered"].length.toString()}
           icon={<Package className="w-6 h-6" />}
         />
       </div>
@@ -223,12 +314,55 @@ export default function SellerDashboard() {
         </CardContent>
       </Card>
 
-      {/* Pending Orders */}
+      {/* Orders Tabs */}
       <Card className="bg-black border-white/10 text-white">
         <CardHeader>
-          <CardTitle>Pending Orders</CardTitle>
+          <CardTitle>Orders</CardTitle>
           <CardDescription className="text-gray-400">
-            Manage your pending orders and bargains
+            Manage all your orders
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="pending" onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="pending">
+                Pending ({orders.pending.length})
+              </TabsTrigger>
+              <TabsTrigger value="delivered">
+                Delivered ({orders.delivered.length})
+              </TabsTrigger>
+              <TabsTrigger value="cancelled">
+                Cancelled ({orders.cancelled.length})
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="pending">
+              <OrdersTable
+                orders={orders.pending}
+                onDelivery={handleDelivery}
+                setOrderToCancel={setOrderToCancel}
+                setShowCancelDialog={setShowCancelDialog}
+                type="pending"
+              />
+            </TabsContent>
+
+            <TabsContent value="delivered">
+              <OrdersTable orders={orders.delivered} type="delivered" />
+            </TabsContent>
+
+            <TabsContent value="cancelled">
+              <OrdersTable orders={orders.cancelled} type="cancelled" />
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+
+      {/* Bargain Requests */}
+      <Card className="bg-black border-white/10 text-white">
+        <CardHeader>
+          <CardTitle>Bargain Requests</CardTitle>
+          <CardDescription className="text-gray-400">
+            Manage price negotiations from buyers
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -238,94 +372,190 @@ export default function SellerDashboard() {
                 <TableRow>
                   <TableHead>Item</TableHead>
                   <TableHead>Buyer</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Original Price</TableHead>
+                  <TableHead>Requested Price</TableHead>
+                  <TableHead>Message</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pendingOrders.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell>{order.itemName}</TableCell>
-                    <TableCell>
-                      <div>
-                        <p>{order.buyer.name}</p>
-                        <p className="text-sm text-gray-400">
-                          {order.buyer.email}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p>₹{order.originalPrice.toLocaleString()}</p>
-                        {order.bargainedPrice && (
+                {!isLoading &&
+                  bargainRequests.map((request) => (
+                    <TableRow key={request.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="relative w-10 h-10">
+                            <Image
+                              src={
+                                "http://localhost:6969/uploads/items/" +
+                                request.itemImage
+                              }
+                              alt={request.itemName}
+                              fill
+                              className="object-cover rounded"
+                            />
+                          </div>
+                          {request.itemName}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <p>{request.buyer.name}</p>
                           <p className="text-sm text-gray-400">
-                            Offered: ₹{order.bargainedPrice.toLocaleString()}
+                            {request.buyer.email}
                           </p>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          order.status === "PENDING" ? "default" : "secondary"
-                        }
-                      >
-                        {order.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {order.status === "BARGAINING" ? (
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <p className="text-white">
+                          ₹{request.originalPrice.toLocaleString()}
+                        </p>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <p className="font-medium text-white">
+                            ₹{request.requestedPrice.toLocaleString()}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded">
+                              -
+                              {Math.round(
+                                ((request.originalPrice -
+                                  request.requestedPrice) /
+                                  request.originalPrice) *
+                                  100
+                              )}
+                              %
+                            </span>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <p className="text-sm text-gray-400">
+                          {request.message}
+                        </p>
+                      </TableCell>
+                      <TableCell>
                         <div className="flex gap-2">
                           <Button
                             size="sm"
-                            onClick={() => handleBargain(order.id, "accept")}
+                            onClick={() =>
+                              handleBargainResponse(request.cartItemId, true)
+                            }
                           >
                             Accept
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleBargain(order.id, "reject")}
+                            onClick={() =>
+                              handleBargainResponse(request.cartItemId, false)
+                            }
                             className="text-black"
                           >
                             Reject
                           </Button>
                         </div>
-                      ) : (
-                        <Button
-                          size="sm"
-                          onClick={() => handleDelivery(order.id)}
-                        >
-                          Complete Delivery
-                        </Button>
-                      )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                {!isLoading && bargainRequests.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8">
+                      <p className="text-gray-400">No bargain requests</p>
                     </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </div>
         </CardContent>
       </Card>
 
+      {/* Seller Listings */}
+      <Card className="bg-black border-white/10 text-white">
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Your Listings</CardTitle>
+              <CardDescription className="text-gray-400">
+                Manage your item listings
+              </CardDescription>
+            </div>
+            <Button onClick={() => router.push("/seller/create-listing")}>
+              Create New Listing
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <ListingsGrid listings={listings} />
+        </CardContent>
+      </Card>
+
       {/* OTP Dialog */}
       <Dialog open={showOTPDialog} onOpenChange={setShowOTPDialog}>
-        <DialogContent>
+        <DialogContent className="bg-black text-white">
           <DialogHeader>
             <DialogTitle>Enter Delivery OTP</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Ask the buyer for the OTP to complete delivery
+            </DialogDescription>
           </DialogHeader>
-          <Input
-            type="text"
-            placeholder="Enter OTP"
-            value={otp}
-            onChange={(e) => setOTP(e.target.value)}
-          />
+          <InputOTP maxLength={6} value={otp} onChange={(otp) => setOTP(otp)}>
+            <InputOTPGroup>
+              <InputOTPSlot index={0} />
+              <InputOTPSlot index={1} />
+              <InputOTPSlot index={2} />
+            </InputOTPGroup>
+            <InputOTPSeparator />
+            <InputOTPGroup>
+              <InputOTPSlot index={3} />
+              <InputOTPSlot index={4} />
+              <InputOTPSlot index={5} />
+            </InputOTPGroup>
+          </InputOTP>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowOTPDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowOTPDialog(false);
+                setOTP("");
+              }}
+              className="text-black m-2"
+            >
               Cancel
             </Button>
-            <Button onClick={verifyOTP}>Verify & Complete</Button>
+            <Button onClick={verifyOTP} className="m-2">
+              Verify & Complete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Order Dialog */}
+      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <DialogContent className="bg-black text-white">
+          <DialogHeader>
+            <DialogTitle>Cancel Order</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Are you sure you want to cancel this order? This action cannot be
+              undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCancelDialog(false);
+                setOrderToCancel(null);
+              }}
+              className="text-black"
+            >
+              No, keep it
+            </Button>
+            <Button variant="destructive" onClick={handleCancelOrder}>
+              Yes, cancel order
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -333,7 +563,171 @@ export default function SellerDashboard() {
   );
 }
 
-// Continue in the same file or create separate components
+const ListingsGrid = ({ listings }: { listings: Listing[] }) => {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      {listings.map((listing) => (
+        <Card key={listing && listing._id} className="bg-black border-white/10">
+          <div className="relative aspect-square">
+            <Image
+              src={"http://localhost:6969/uploads/items/" + listing.images[0]}
+              alt={listing && listing.name}
+              fill
+              className="object-cover rounded-t-lg"
+            />
+            <div className="absolute top-2 right-2">
+              <Badge
+                variant={
+                  listing && listing.isAvailable ? "default" : "secondary"
+                }
+              >
+                {listing && listing.isAvailable ? "Available" : "Sold Out"}
+              </Badge>
+            </div>
+          </div>
+          <CardContent className="p-4">
+            <h3 className="font-semibold text-lg text-white mb-2">
+              {listing && listing.name}
+            </h3>
+            <div className="flex justify-between items-center">
+              <p className="text-white font-bold">
+                ₹{listing && listing.price.toLocaleString()}
+              </p>
+              <p className="text-sm text-gray-400">
+                Qty: {listing && listing.quantity}
+              </p>
+            </div>
+            <p className="text-sm text-gray-400 mt-2">
+              Listed on{" "}
+              {new Date(listing && listing.createdAt).toLocaleDateString()}
+            </p>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+};
+
+interface OrdersTableProps {
+  orders: Order[];
+  type: "pending" | "delivered" | "cancelled";
+  onDelivery?: (orderId: string) => void;
+  setOrderToCancel?: (order: Order) => void;
+  setShowCancelDialog?: (show: boolean) => void;
+}
+
+const OrdersTable = ({
+  orders,
+  type,
+  onDelivery,
+  setOrderToCancel,
+  setShowCancelDialog,
+}: OrdersTableProps) => {
+  return (
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Item</TableHead>
+            <TableHead>Buyer</TableHead>
+            <TableHead>Price</TableHead>
+            <TableHead>Status</TableHead>
+            {type === "pending" && <TableHead>Actions</TableHead>}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {orders.map((order) => (
+            <TableRow key={order.id}>
+              <TableCell>
+                <div className="flex items-center gap-3">
+                  <div className="relative w-10 h-10">
+                    <Image
+                      src={
+                        "http://localhost:6969/uploads/items/" + order.itemImage
+                      }
+                      alt={order.itemName}
+                      fill
+                      className="object-cover rounded"
+                    />
+                  </div>
+                  {order.itemName}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div>
+                  <p>{order.buyer.name}</p>
+                  <p className="text-sm text-gray-400">{order.buyer.email}</p>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div>
+                  {order.bargainedPrice &&
+                  order.bargainedPrice !== order.originalPrice ? (
+                    <div className="space-y-1">
+                      <p className="font-medium text-white">
+                        ₹{order.bargainedPrice.toLocaleString()}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="line-through text-gray-400">
+                          ₹{order.originalPrice.toLocaleString()}
+                        </p>
+                        <span className="text-xs bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded">
+                          -
+                          {Math.round(
+                            ((order.originalPrice - order.bargainedPrice) /
+                              order.originalPrice) *
+                              100
+                          )}
+                          %
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-white">
+                      ₹{order.originalPrice.toLocaleString()}
+                    </p>
+                  )}
+                </div>
+              </TableCell>
+              <TableCell>
+                <Badge
+                  variant={
+                    order.status === "DELIVERED"
+                      ? "secondary"
+                      : order.status === "CANCELLED"
+                      ? "destructive"
+                      : "default"
+                  }
+                >
+                  {order.status}
+                </Badge>
+              </TableCell>
+              {type === "pending" && (
+                <TableCell>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => onDelivery?.(order.id)}>
+                      Complete Delivery
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => {
+                        setOrderToCancel?.(order);
+                        setShowCancelDialog?.(true);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </TableCell>
+              )}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+};
 
 interface StatsCardProps {
   title: string;

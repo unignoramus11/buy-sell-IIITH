@@ -1,3 +1,12 @@
+import { Request } from "express";
+
+export interface AuthRequest extends Request {
+  user?: {
+    id: string;
+    email: string;
+  };
+}
+
 export interface UserDocument extends Document {
   firstName: string;
   lastName: string;
