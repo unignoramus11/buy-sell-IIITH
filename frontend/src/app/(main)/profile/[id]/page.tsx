@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
+import { useProfile } from "@/hooks/useProfile";
 
 interface UserProfile {
   id: string;
@@ -65,7 +66,6 @@ export default function ProfilePage({
 }) {
   const resolvedParams = use(params);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     firstName: "",
@@ -89,105 +89,100 @@ export default function ProfilePage({
     new: false,
     confirm: false,
   });
+  const [reviews, setReviews] = useState<Review[]>([]);
+
+  const { getProfile, updateProfile, updatePassword, isLoading } = useProfile();
 
   useEffect(() => {
+    const fetchProfile = async () => {
+      const data = await getProfile(resolvedParams.id);
+      if (data) {
+        setProfile(data.user);
+        setReviews(data.reviews);
+      }
+    };
+
     fetchProfile();
   }, [resolvedParams.id]);
 
-  const fetchProfile = async () => {
-    setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setProfile({
-        id: resolvedParams.id,
-        firstName: "John",
-        lastName: "Doe",
-        email: "john.doe@iiit.ac.in",
-        isVerified: true,
-        age: 21,
-        contactNumber: "+91 9876543210",
-        avatar: "/images/test2.png",
-        overallRating: 4.8,
-        reviews: [
-          {
-            id: "1",
-            rating: 5,
-            comment: "Great seller! Very responsive and item was as described.",
-            reviewerName: "Jane Smith",
-            reviewerAvatar: "/images/test3.png",
-            createdAt: new Date().toISOString(),
-          },
-          // Add more reviews...
-        ],
-      });
-      setIsLoading(false);
-    }, 1000);
-  };
+  // const handlePasswordChange = async () => {
+  //   // Validate passwords
+  //   if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+  //     toast({
+  //       title: "Passwords don't match",
+  //       description: "New password and confirm password must match.",
+  //       variant: "destructive",
+  //     });
+  //     return;
+  //   }
+
+  //   if (passwordForm.newPassword.length < 8) {
+  //     toast({
+  //       title: "Password too short",
+  //       description: "Password must be at least 8 characters long.",
+  //       variant: "destructive",
+  //     });
+  //     return;
+  //   }
+
+  //   // Replace with actual API call
+  //   try {
+  //     // Simulate API call
+  //     await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  //     toast({
+  //       title: "Password updated",
+  //       description: "Your password has been updated successfully.",
+  //     });
+  //     setIsChangingPassword(false);
+  //     setPasswordForm({
+  //       currentPassword: "",
+  //       newPassword: "",
+  //       confirmPassword: "",
+  //     });
+  //   } catch (error) {
+  //     toast({
+  //       title: "Error",
+  //       description: "Failed to update password. Please try again.",
+  //       variant: "destructive",
+  //     });
+  //   }
+  // };
 
   const handlePasswordChange = async () => {
-    // Validate passwords
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast({
-        title: "Passwords don't match",
-        description: "New password and confirm password must match.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (passwordForm.newPassword.length < 8) {
-      toast({
-        title: "Password too short",
-        description: "Password must be at least 8 characters long.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Replace with actual API call
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      toast({
-        title: "Password updated",
-        description: "Your password has been updated successfully.",
-      });
+    const result = await updatePassword(
+      passwordForm.currentPassword,
+      passwordForm.newPassword
+    );
+    if (result) {
       setIsChangingPassword(false);
       setPasswordForm({
         currentPassword: "",
         newPassword: "",
         confirmPassword: "",
       });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update password. Please try again.",
-        variant: "destructive",
-      });
     }
   };
 
   const handleEditSubmit = async () => {
-    // Replace with actual API call
-    toast({
-      title: "Profile updated",
-      description: "Your profile has been updated successfully.",
+    const formData = new FormData();
+    Object.entries(editForm).forEach(([key, value]) => {
+      formData.append(key, value);
     });
-    setIsEditing(false);
-    // Update profile state with new values
-    setProfile((prev) =>
-      prev
-        ? {
-            ...prev,
-            firstName: editForm.firstName,
-            lastName: editForm.lastName,
-            age: parseInt(editForm.age),
-            contactNumber: editForm.contactNumber,
-            email: !prev.isVerified ? editForm.email : prev.email,
-          }
-        : null
-    );
+
+    const result = await updateProfile(formData);
+    if (result) {
+      setIsEditing(false);
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been updated successfully.",
+      });
+      // Refresh profile
+      const data = await getProfile(resolvedParams.id);
+      if (data) {
+        setProfile(data.user);
+      }
+    }
   };
 
   const handleAvatarUpload = async (
@@ -340,7 +335,7 @@ export default function ProfilePage({
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                {profile.reviews.map((review) => (
+                {reviews.map((review) => (
                   <ReviewCard key={review.id} review={review} />
                 ))}
               </div>

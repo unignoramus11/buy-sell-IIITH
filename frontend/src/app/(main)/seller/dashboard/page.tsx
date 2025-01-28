@@ -47,6 +47,8 @@ import {
   X,
   Loader2,
 } from "lucide-react";
+import { useSeller } from "@/hooks/useSeller";
+import { useOrders } from "@/hooks/useOrders";
 
 interface SalesData {
   date: string;
@@ -71,46 +73,40 @@ export default function SellerDashboard() {
   const [salesData, setSalesData] = useState<SalesData[]>([]);
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
   const [totalEarnings, setTotalEarnings] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<PendingOrder | null>(null);
   const [showOTPDialog, setShowOTPDialog] = useState(false);
   const [otp, setOTP] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
   const [counterOffer, setCounterOffer] = useState("");
   const { toast } = useToast();
+  const { getDashboardStats, getSellerItems, handleBargainRequest } =
+    useSeller();
+  const { verifyDelivery } = useOrders();
 
   useEffect(() => {
+    const fetchDashboardData = async () => {
+      setIsLoading(true);
+      const [stats, items] = await Promise.all([
+        getDashboardStats(),
+        getSellerItems(),
+      ]);
+
+      if (stats) {
+        setSalesData(stats.salesData);
+        setTotalEarnings(stats.totalEarnings);
+      }
+
+      if (items) {
+        const pendingOrders = items.filter(
+          (item: any) => item.status === "PENDING" || item.hasBargainRequests
+        );
+        setPendingOrders(pendingOrders);
+      }
+      setIsLoading(false);
+    };
+
     fetchDashboardData();
   }, []);
-
-  const fetchDashboardData = async () => {
-    // Simulate API call
-    setTimeout(() => {
-      setSalesData([
-        { date: "Jan", revenue: 50000, bargainedRevenue: 45000 },
-        { date: "Feb", revenue: 65000, bargainedRevenue: 58000 },
-        // Add more data...
-      ]);
-
-      setPendingOrders([
-        {
-          id: "1",
-          itemName: "MacBook Pro M1",
-          buyer: {
-            name: "John Doe",
-            email: "john.doe@iiit.ac.in",
-          },
-          originalPrice: 85000,
-          bargainedPrice: 80000,
-          status: "BARGAINING",
-          date: new Date().toISOString(),
-        },
-        // Add more orders...
-      ]);
-
-      setTotalEarnings(250000);
-      setIsLoading(false);
-    }, 1000);
-  };
 
   const handleDelivery = async (orderId: string) => {
     setShowOTPDialog(true);
@@ -120,37 +116,43 @@ export default function SellerDashboard() {
   };
 
   const verifyOTP = async () => {
-    // Replace with actual API call
-    toast({
-      title: "Order completed",
-      description: "The order has been marked as delivered.",
-    });
-    setShowOTPDialog(false);
-    // Update orders list
-    setPendingOrders((prev) =>
-      prev.filter((order) => order.id !== selectedOrder?.id)
-    );
+    if (!selectedOrder || !otp) return;
+
+    const result = await verifyDelivery(selectedOrder.id, otp);
+    if (result) {
+      setShowOTPDialog(false);
+      setOTP("");
+      // Refresh dashboard data
+      const items = await getSellerItems();
+      if (items) {
+        const pendingOrders = items.filter(
+          (item: any) => item.status === "PENDING" || item.hasBargainRequests
+        );
+        setPendingOrders(pendingOrders);
+      }
+    }
   };
 
   const handleBargain = async (
     orderId: string,
     action: "accept" | "reject" | "counter"
   ) => {
-    // Replace with actual API call
-    if (action === "counter" && !counterOffer) {
-      toast({
-        title: "Enter counter offer",
-        description: "Please enter a counter offer amount.",
-        variant: "destructive",
-      });
-      return;
-    }
+    const result = await handleBargainRequest(
+      orderId,
+      action,
+      action === "counter" ? parseFloat(counterOffer) : undefined
+    );
 
-    toast({
-      title: "Bargain updated",
-      description: `The bargain has been ${action}ed.`,
-    });
-    // Update orders list accordingly
+    if (result) {
+      // Refresh pending orders
+      const items = await getSellerItems();
+      if (items) {
+        const pendingOrders = items.filter(
+          (item: any) => item.status === "PENDING" || item.hasBargainRequests
+        );
+        setPendingOrders(pendingOrders);
+      }
+    }
   };
 
   if (isLoading) {

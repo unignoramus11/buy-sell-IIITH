@@ -1,47 +1,66 @@
+// components/recaptcha.tsx
 "use client";
 
 import { useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
 
 declare global {
   interface Window {
     grecaptcha: any;
+    onRecaptchaLoad?: () => void;
   }
 }
 
 interface ReCAPTCHAProps {
-  onVerify: (token: string) => void;
+  onVerify: (token: string | null) => void;
 }
 
 export function ReCAPTCHA({ onVerify }: ReCAPTCHAProps) {
-  const { toast } = useToast();
-
   useEffect(() => {
-    const loadReCaptcha = async () => {
-      try {
-        await window.grecaptcha.ready(() => {
+    // Initialize callback before loading script
+    window.onRecaptchaLoad = () => {
+      const executeReCaptcha = () => {
+        const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+        if (!siteKey) {
+          console.error("reCAPTCHA site key is not defined");
+          return;
+        }
+
+        window.grecaptcha.ready(() => {
           window.grecaptcha
-            .execute(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY, {
-              action: "submit",
-            })
+            .execute(siteKey, { action: "login" })
             .then((token: string) => {
               onVerify(token);
             })
-            .catch((error: any) => {
-              toast({
-                title: "ReCAPTCHA Error",
-                description: "Failed to verify reCAPTCHA. Please try again.",
-                variant: "destructive",
-              });
+            .catch((error: Error) => {
+              console.error("reCAPTCHA error:", error);
+              onVerify(null);
             });
         });
-      } catch (error) {
-        console.error("ReCAPTCHA failed to load:", error);
-      }
+      };
+
+      // Initial execution
+      executeReCaptcha();
+
+      // Refresh token every 2 minutes
+      const intervalId = setInterval(executeReCaptcha, 120000);
+      return () => clearInterval(intervalId);
     };
 
-    loadReCaptcha();
+    // Load the reCAPTCHA script
+    const script = document.createElement("script");
+    const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+    script.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`;
+    script.async = true;
+    script.defer = true;
+    script.onload = window.onRecaptchaLoad;
+    document.head.appendChild(script);
+
+    return () => {
+      // Cleanup
+      document.head.removeChild(script);
+      delete window.onRecaptchaLoad;
+    };
   }, [onVerify]);
 
-  return null;
+  return null; // reCAPTCHA v3 is invisible
 }

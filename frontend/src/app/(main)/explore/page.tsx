@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, X } from "lucide-react";
+import { useItems } from "@/hooks/useItems";
 
 // Define types
 interface Item {
@@ -38,38 +39,15 @@ export default function ExplorePage() {
   const [filteredItems, setFilteredItems] = useState<Item[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Simulate API call
+  const { getItems, isLoading } = useItems();
+
   useEffect(() => {
     const fetchItems = async () => {
-      // Replace with actual API call
-      setTimeout(() => {
-        setItems([
-          {
-            id: "1",
-            name: "MacBook Pro",
-            price: 80000,
-            description: "2021 Model, M1 Chip, 16GB RAM",
-            sellerName: "John Doe",
-            sellerEmail: "john.doe@iiit.ac.in",
-            categories: ["Electronics", "Books"],
-            imageUrl: "/images/test.png",
-          },
-          {
-            id: "2",
-            name: "MacBook Air",
-            price: 800000,
-            description: "2022 Model, M2 Chip, 128GB RAM",
-            sellerName: "John Doe",
-            sellerEmail: "john.doe@iiit.ac.in",
-            categories: ["Electronics", "Music"],
-            imageUrl: "/images/test2.png",
-          },
-          // Add more items...
-        ]);
-        setIsLoading(false);
-      }, 1500);
+      const items = await getItems();
+      if (items) {
+        setItems(items);
+      }
     };
 
     fetchItems();
@@ -228,13 +206,13 @@ function ItemCard({ item }: { item: Item }) {
 
           <div className="mt-4 flex flex-wrap gap-2">
             {item.categories.map((category) => (
-                <CardItem
+              <CardItem
                 key={category}
                 translateZ={20}
                 className="w-fit px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded-full text-xs"
-                >
+              >
                 {category}
-                </CardItem>
+              </CardItem>
             ))}
           </div>
         </CardBody>

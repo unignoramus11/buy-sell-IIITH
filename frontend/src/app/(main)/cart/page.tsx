@@ -32,6 +32,10 @@ import {
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
+import { useCart } from "@/hooks/useCart";
+import { useOrders } from "@/hooks/useOrders";
+import router from "next/router";
+import { ReCAPTCHA } from "@/components/recaptcha";
 
 interface CartItem {
   id: string;
@@ -49,41 +53,26 @@ interface CartItem {
 
 export default function CartPage() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isOrdering, setIsOrdering] = useState(false);
   const [selectedItem, setSelectedItem] = useState<CartItem | null>(null);
   const [showBargainDialog, setShowBargainDialog] = useState(false);
   const [bargainPrice, setBargainPrice] = useState("");
   const [bargainMessage, setBargainMessage] = useState("");
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
   const { toast } = useToast();
 
+  const { getCart, bargainItem, isLoading } = useCart();
+  const { createOrder } = useOrders();
+
   useEffect(() => {
-    // Simulate API call
-    const fetchCartItems = async () => {
-      setIsLoading(true);
-      // Replace with actual API call
-      setTimeout(() => {
-        setCartItems([
-          {
-            id: "1",
-            name: "MacBook Pro M1",
-            price: 85000,
-            bargainedPrice: null,
-            quantity: 1,
-            image: "/images/test.png",
-            seller: {
-              name: "John Doe",
-              email: "john.doe@iiit.ac.in",
-            },
-            bargainStatus: "NONE",
-          },
-          // Add more items...
-        ]);
-        setIsLoading(false);
-      }, 1000);
+    const fetchCart = async () => {
+      const cartItems = await getCart();
+      if (cartItems) {
+        setCartItems(cartItems);
+      }
     };
 
-    fetchCartItems();
+    fetchCart();
   }, []);
 
   const removeFromCart = async (itemId: string) => {
@@ -105,35 +94,45 @@ export default function CartPage() {
   const submitBargain = async () => {
     if (!selectedItem || !bargainPrice || !bargainMessage) return;
 
-    // Replace with actual API call
-    const updatedItems = cartItems.map((item) =>
-      item.id === selectedItem.id
-        ? {
-            ...item,
-            bargainedPrice: parseFloat(bargainPrice),
-            bargainStatus: "PENDING" as const,
-          }
-        : item
+    const result = await bargainItem(
+      selectedItem.id,
+      parseFloat(bargainPrice),
+      bargainMessage
     );
-    setCartItems(updatedItems);
-    setShowBargainDialog(false);
-    toast({
-      title: "Bargain request sent",
-      description: "The seller will be notified of your offer.",
-    });
+
+    if (result) {
+      setShowBargainDialog(false);
+      // Refresh cart
+      const cartItems = await getCart();
+      if (cartItems) {
+        setCartItems(cartItems);
+      }
+    }
   };
 
   const placeOrder = async () => {
+    if (!recaptchaToken) {
+      toast({
+        title: "Verification required",
+        description: "Please wait for reCAPTCHA verification.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsOrdering(true);
-    // Replace with actual API call
-    setTimeout(() => {
+    const result = await createOrder(
+      cartItems.map((item) => item.id),
+      recaptchaToken
+    );
+    if (result) {
       setCartItems([]);
       setIsOrdering(false);
       toast({
         title: "Order placed successfully",
         description: "Check your orders page for OTP and delivery status.",
       });
-    }, 2000);
+    }
   };
 
   const getTotalCost = () => {
@@ -258,6 +257,7 @@ export default function CartPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <ReCAPTCHA onVerify={setRecaptchaToken} />
     </div>
   );
 }

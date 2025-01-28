@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/card";
 import { ReCAPTCHA } from "@/components/recaptcha";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
@@ -33,7 +34,7 @@ export default function SignupPage() {
     password: false,
     confirm: false,
   });
-  const [isLoading, setIsLoading] = useState(false);
+  const { register, isLoading } = useAuth();
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
   const router = useRouter();
   const { toast } = useToast();
@@ -60,7 +61,10 @@ export default function SignupPage() {
     }
 
     // Validate email domain
-    if (!formData.email.endsWith("@iiit.ac.in") || !formData.email.includes("@") && !formData.email.endsWith(".iiit.ac.in")) {
+    if (
+      !formData.email.endsWith("@iiit.ac.in") &&
+      (!formData.email.includes("@") || !formData.email.endsWith(".iiit.ac.in"))
+    ) {
       toast({
         title: "Invalid email",
         description: "Please use your IIIT email address.",
@@ -78,47 +82,13 @@ export default function SignupPage() {
       return;
     }
 
-    setIsLoading(true);
-    try {
-      // Replace with your actual API endpoint
-      const response = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...formData,
-          recaptchaToken,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Signup failed");
-      }
-
-      toast({
-        title: "Account created",
-        description: "Please check your email for verification.",
-      });
-
-      router.push("/auth/login");
-    } catch (error: any) {
-      toast({
-        title: "Signup failed",
-        description: error.message || "Please try again later.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    await register(formData, recaptchaToken);
   };
 
   const handleCASSignup = () => {
-    // Replace with your CAS signup URL
+    // TODO: Update this URL
     window.location.href =
-      "https://login.iiit.ac.in/cas/login?service=YOUR_SERVICE_URL";
+      "https://login.iiit.ac.in/cas/login?service=http%3A%2F%2Flocalhost%3A3000%2Fexplore";
   };
 
   return (

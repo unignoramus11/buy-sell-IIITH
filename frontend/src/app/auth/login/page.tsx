@@ -18,18 +18,20 @@ import {
 } from "@/components/ui/card";
 import { ReCAPTCHA } from "@/components/recaptcha";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const { login, isLoading } = useAuth();
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
   const router = useRouter();
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!recaptchaToken) {
       toast({
         title: "Verification required",
@@ -39,49 +41,13 @@ export default function LoginPage() {
       return;
     }
 
-    setIsLoading(true);
-    try {
-      // Replace with your actual API endpoint
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          password,
-          recaptchaToken,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Login failed");
-      }
-
-      toast({
-        title: "Welcome back!",
-        description: "You have been successfully logged in.",
-      });
-
-      router.push("/explore");
-    } catch (error: any) {
-      toast({
-        title: "Login failed",
-        description:
-          error.message || "Please check your credentials and try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    await login(email, password, recaptchaToken);
   };
 
   const handleCASLogin = () => {
-    // Replace with your CAS login URL
+    // TODO: Update this URL
     window.location.href =
-      "https://login.iiit.ac.in/cas/login?service=YOUR_SERVICE_URL";
+      "https://login.iiit.ac.in/cas/login?service=http%3A%2F%2Flocalhost%3A3000%2Fexplore";
   };
 
   return (
@@ -118,7 +84,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  pattern="[a-zA-Z0-9._%+-]+@[^\s@]+\.iiit\.ac\.in$"
+                  pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.iiit\.ac\.in"
                   className="w-full"
                 />
               </div>

@@ -25,6 +25,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Upload, X, Image as ImageIcon, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useItems } from "@/hooks/useItems";
 
 const categories = [
   "Books",
@@ -51,6 +52,7 @@ export default function CreateListing() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const { toast } = useToast();
+  const { createItem } = useItems();
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -135,24 +137,36 @@ export default function CreateListing() {
     }
 
     setIsSubmitting(true);
-    try {
-      // Replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
 
+    const formData = new FormData();
+    Object.entries(formData).forEach(([key, value]) => {
+      if (key !== "images") {
+        formData.append(key, value);
+      }
+    });
+
+    // Append each image
+    images.forEach((image) => {
+      formData.append("itemImages", image);
+    });
+
+    // Append categories as JSON string
+    formData.append("categories", JSON.stringify(formData.categories));
+
+    const result = await createItem(formData);
+    if (result) {
       toast({
         title: "Listing created",
         description: "Your item has been listed successfully.",
       });
-      router.push("/seller/dashboard");
-    } catch (error) {
+    } else {
       toast({
         title: "Error",
         description: "Failed to create listing. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
     }
+    setIsSubmitting(false);
   };
 
   return (
