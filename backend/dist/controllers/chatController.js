@@ -60,8 +60,8 @@ const handleChat = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     try {
         const { message, history, email } = req.body;
         if (!email || email !== "mohit.singh@research.iiit.ac.in") {
-            res.status(403).json({
-                reply: "For obvious reasons, I ain't letting y'all access my apis freely 🤭",
+            res.json({
+                reply: "For obvious reasons, I ain't letting y'all access my api freely 🤭",
             });
             return;
         }
