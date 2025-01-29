@@ -320,7 +320,7 @@ export default function SellerDashboard() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="pending">
-            <TabsList className="grid w-full grid-cols-3 bg-white/5">
+            <TabsList className="flex sm:grid sm:grid-cols-3 bg-white/5 overflow-x-auto w-full">
               <TabsTrigger value="pending">
                 Pending ({orders.pending.length})
               </TabsTrigger>

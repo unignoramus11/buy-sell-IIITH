@@ -320,6 +320,20 @@ export default function ItemPage({
 
           {/* Mobile Sticky Buttons */}
           <div className="fixed bottom-0 left-0 right-0 md:hidden bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 p-4 flex gap-4">
+            <Button
+              size="lg"
+              variant="outline"
+              className="w-12 flex items-center justify-center"
+              onClick={() => {
+                navigator.clipboard.writeText(window.location.href);
+                toast({
+                  title: "Link copied",
+                  description: "Item link has been copied to clipboard.",
+                });
+              }}
+            >
+              <Share2 className="h-4 w-4" />
+            </Button>
             {isOwnItem(item.seller.email) ? (
               <Button size="lg" variant="outline" className="flex-1" disabled>
                 Cannot buy your own item
@@ -337,20 +351,6 @@ export default function ItemPage({
                 Add to Cart
               </Button>
             )}
-            <Button
-              size="lg"
-              variant="outline"
-              className="w-12 flex items-center justify-center"
-              onClick={() => {
-                navigator.clipboard.writeText(window.location.href);
-                toast({
-                  title: "Link copied",
-                  description: "Item link has been copied to clipboard.",
-                });
-              }}
-            >
-              <Share2 className="h-4 w-4" />
-            </Button>
           </div>
         </div>
       </div>
