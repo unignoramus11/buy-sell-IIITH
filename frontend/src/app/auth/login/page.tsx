@@ -4,7 +4,6 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,9 +23,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const { login, isLoading } = useAuth();
+  const { login, isLoading, loginWithCAS } = useAuth();
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
-  const router = useRouter();
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -42,12 +40,6 @@ export default function LoginPage() {
     }
 
     await login(email, password, recaptchaToken);
-  };
-
-  const handleCASLogin = () => {
-    // TODO: Update this URL
-    window.location.href =
-      "https://login.iiit.ac.in/cas/login?service=http%3A%2F%2Flocalhost%3A3000%2Fexplore";
   };
 
   return (
@@ -139,16 +131,17 @@ export default function LoginPage() {
               variant="outline"
               type="button"
               className="w-full"
-              onClick={handleCASLogin}
+              onClick={loginWithCAS}
+              disabled={isLoading}
             >
               <Image
-                src="/cas-logo.png"
+                src="/iiith-logo.png"
                 alt="CAS"
-                width={20}
-                height={20}
-                className="mr-2 h-5 w-5"
+                width={50}
+                height={50}
+                className="mr-2 h-7 w-7"
               />
-              Login with CAS
+              {isLoading ? "Redirecting..." : "Login with CAS"}
             </Button>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">

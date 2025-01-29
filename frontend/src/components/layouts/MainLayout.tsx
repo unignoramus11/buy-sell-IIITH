@@ -14,7 +14,6 @@ import {
   LogOut,
   PlusCircle,
   LayoutDashboard,
-  Store,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -157,7 +156,7 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
                 }`}
               >
                 <Link href="/" className="text-2xl font-bold">
-                  <Store className="w-8 h-8" />
+                  <img src="/logo.png" alt="logo" className="w-11 h-11" />
                 </Link>
               </div>
 
@@ -192,7 +191,8 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
                         {user?.avatar ? (
                           <img
                             src={
-                              "http://localhost:6969/uploads/users/" +
+                              process.env.NEXT_PUBLIC_UPLOADS_URL +
+                              "/users/" +
                               user.avatar
                             }
                             alt="User avatar"

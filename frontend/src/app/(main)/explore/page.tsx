@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, X } from "lucide-react";
 import { useItems } from "@/hooks/useItems";
-import { useImage } from "@/hooks/useImage";
 import { useAuth } from "@/contexts/AuthContext";
 
 // Define types
@@ -170,10 +169,6 @@ export default function ExplorePage() {
 }
 
 function ItemCard({ item }: { item: Item }) {
-  const { src, error, isPlaceholder } = useImage(
-    "uploads/items/" + item.images[0]
-  );
-
   return (
     <Link href={`/explore/item/${item._id}`}>
       <CardContainer>
@@ -194,7 +189,9 @@ function ItemCard({ item }: { item: Item }) {
 
           <CardItem translateZ="100" className="w-full mt-4">
             <Image
-              src={"http://localhost:6969/uploads/items/" + item.images[0]}
+              src={
+                process.env.NEXT_PUBLIC_UPLOADS_URL + "/items/" + item.images[0]
+              }
               height={1000}
               width={1000}
               className="h-60 w-full object-cover rounded-xl group-hover/card:shadow-xl"

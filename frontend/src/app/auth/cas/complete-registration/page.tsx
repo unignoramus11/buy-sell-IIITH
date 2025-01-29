@@ -1,41 +1,49 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import Link from "next/link";
-import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ReCAPTCHA } from "@/components/recaptcha";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { ReCAPTCHA } from "@/components/recaptcha";
 
-export default function SignupPage() {
+interface UserData {
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+
+export default function CompleteRegistration() {
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
     age: "",
     contactNumber: "",
+    password: "",
+    confirmPassword: "",
   });
   const [showPasswords, setShowPasswords] = useState({
     password: false,
     confirm: false,
   });
-  const { register, isLoading, loginWithCAS } = useAuth();
-  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
+  const [userData, setUserData] = useState<UserData>({
+    email: "",
+    firstName: "",
+    lastName: "",
+  });
+  const { completeCASRegistration, isLoading } = useAuth();
+  const router = useRouter();
   const { toast } = useToast();
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -45,8 +53,29 @@ export default function SignupPage() {
     }));
   };
 
-  const handleSignup = async (e: React.FormEvent) => {
+  useEffect(() => {
+    const tempUserData = localStorage.getItem("tempUserData");
+    const tempToken = localStorage.getItem("tempToken");
+
+    if (!tempUserData || !tempToken) {
+      router.push("/auth/login");
+      return;
+    }
+
+    setUserData(JSON.parse(tempUserData));
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!recaptchaToken) {
+      toast({
+        title: "Verification required",
+        description: "Please complete the reCAPTCHA verification.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
@@ -58,30 +87,17 @@ export default function SignupPage() {
       return;
     }
 
-    // Validate email domain
-    if (
-      !formData.email.endsWith("@iiit.ac.in") &&
-      (!formData.email.includes("@") || !formData.email.endsWith(".iiit.ac.in"))
-    ) {
-      toast({
-        title: "Invalid email",
-        description: "Please use your IIIT email address.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!recaptchaToken) {
-      toast({
-        title: "Verification required",
-        description: "Please wait for reCAPTCHA verification.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    await register(formData, recaptchaToken);
+    await completeCASRegistration({
+      age: parseInt(formData.age),
+      contactNumber: formData.contactNumber,
+      password: formData.password,
+      recaptchaToken,
+    });
   };
+
+  if (!userData) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
@@ -103,46 +119,36 @@ export default function SignupPage() {
               />
             </div>
             <CardTitle className="text-2xl text-center">
-              Create account
+              Complete Your Profile
             </CardTitle>
             <CardDescription className="text-center">
-              Enter your details to create your account
+              Please provide additional details to complete your registration
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSignup} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Email</label>
+                <Input value={userData.email} disabled className="bg-gray-50" />
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">First Name</label>
                   <Input
-                    name="firstName"
-                    value={formData.firstName}
-                    onChange={handleInputChange}
-                    required
+                    value={userData.firstName}
+                    disabled
+                    className="bg-gray-50"
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Last Name</label>
                   <Input
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={handleInputChange}
-                    required
+                    value={userData.lastName}
+                    disabled
+                    className="bg-gray-50"
                   />
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Email</label>
-                <Input
-                  type="email"
-                  name="email"
-                  placeholder="john.doe@iiit.ac.in"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  required
-                  pattern="[a-zA-Z0-9._%+-]+@[^\s@]+\.iiit\.ac\.in$"
-                />
               </div>
 
               <div className="space-y-2">
@@ -240,49 +246,10 @@ export default function SignupPage() {
                 disabled={isLoading || !recaptchaToken}
               >
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Create Account
+                Complete Registration
               </Button>
             </form>
-
-            <div className="relative my-4">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Or continue with
-                </span>
-              </div>
-            </div>
-
-            <Button
-              variant="outline"
-              type="button"
-              className="w-full"
-              onClick={loginWithCAS}
-              disabled={isLoading}
-            >
-              <Image
-                src="/cas-logo.png"
-                alt="CAS"
-                width={20}
-                height={20}
-                className="mr-2 h-5 w-5"
-              />
-              {isLoading ? "Redirecting..." : "Sign up with CAS"}
-            </Button>
           </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <div className="text-sm text-center text-gray-500">
-              Already have an account?{" "}
-              <Link
-                href="/auth/login"
-                className="text-primary hover:underline font-medium"
-              >
-                Login
-              </Link>
-            </div>
-          </CardFooter>
         </Card>
       </motion.div>
     </div>

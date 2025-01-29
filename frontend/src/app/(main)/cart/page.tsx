@@ -82,7 +82,7 @@ export default function CartPage() {
           setError(null);
         }
       } catch (error) {
-        setError("Failed to load cart items");
+        setError("Failed to load cart items " + error);
       }
     };
 
@@ -162,7 +162,7 @@ export default function CartPage() {
     } catch (error) {
       toast({
         title: "Failed to place order",
-        description: "Please try again later",
+        description: "Please try again later (" + error + ")",
         variant: "destructive",
       });
     } finally {
@@ -347,7 +347,7 @@ const CartItemCard = ({ item, onRemove, onBargain }: CartItemCardProps) => {
           {/* Item Image */}
           <div className="relative w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
             <Image
-              src={"http://localhost:6969/uploads/items/" + item.image}
+              src={process.env.NEXT_PUBLIC_UPLOADS_URL + "/items/" + item.image}
               alt={item.name}
               fill
               className="object-cover"
@@ -414,7 +414,8 @@ const CartItemCard = ({ item, onRemove, onBargain }: CartItemCardProps) => {
               </div>
 
               {/* Bargain Button */}
-              {(item.bargainStatus === "NONE" || item.bargainStatus === "REJECTED") && (
+              {(item.bargainStatus === "NONE" ||
+                item.bargainStatus === "REJECTED") && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -441,7 +442,7 @@ const EmptyCart = () => {
       </div>
       <h2 className="text-2xl font-bold mb-2">Your cart is empty</h2>
       <p className="text-gray-500 mb-6">
-        Looks like you haven't added any items to your cart yet.
+        Looks like you haven&apos;t added any items to your cart yet.
       </p>
       <Button asChild>
         <Link href="/explore">Start Shopping</Link>

@@ -121,7 +121,8 @@ export default function ItemPage({
                 initial={{ opacity: 0 }}
                 onClick={() => {
                   window.open(
-                    "http://localhost:6969/uploads/items/" +
+                    process.env.NEXT_PUBLIC_UPLOADS_URL +
+                      "/items/" +
                       item.images[currentImageIndex],
                     "_blank"
                   );
@@ -134,7 +135,8 @@ export default function ItemPage({
                 <Lens hovering={imageHovering} setHovering={setImageHovering}>
                   <Image
                     src={
-                      "http://localhost:6969/uploads/items/" +
+                      process.env.NEXT_PUBLIC_UPLOADS_URL +
+                      "/items/" +
                       item.images[currentImageIndex]
                     }
                     alt={item.name}
@@ -202,7 +204,9 @@ export default function ItemPage({
               >
                 <Image
                   src={
-                    "http://localhost:6969/uploads/items/" + item.images[index]
+                    process.env.NEXT_PUBLIC_UPLOADS_URL +
+                    "/items/" +
+                    item.images[index]
                   }
                   alt={`${item.name} preview ${index + 1}`}
                   fill
@@ -226,7 +230,7 @@ export default function ItemPage({
 
           <Card
             onClick={() => {
-                window.location.href = "/profile/" + item.seller._id;
+              window.location.href = "/profile/" + item.seller._id;
             }}
             className="cursor-pointer"
           >
@@ -239,7 +243,8 @@ export default function ItemPage({
                   {user?.avatar ? (
                     <img
                       src={
-                        "http://localhost:6969/uploads/users/" +
+                        process.env.NEXT_PUBLIC_UPLOADS_URL +
+                        "/users/" +
                         item.seller.avatar
                       }
                       alt="User avatar"

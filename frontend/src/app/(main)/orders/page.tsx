@@ -66,7 +66,6 @@ interface Order {
 }
 
 export default function OrdersPage() {
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [activeTab, setActiveTab] = useState("pending");
   const [orders, setOrders] = useState<Order[]>([]);
   const { getOrders, regenerateOTP, isLoading, cancelOrder } = useOrders();
@@ -152,25 +151,25 @@ export default function OrdersPage() {
             {isLoading ? (
               <OrdersSkeleton />
             ) : getFilteredOrders(activeTab).length === 0 ? (
-                <motion.div 
+              <motion.div
                 className="flex items-center justify-center h-[400] w-full"
                 initial={{ opacity: 0, scale: 0.5 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.25 }}
-                >
+              >
                 <motion.div
-                  animate={{ 
-                  y: [0, -10, 0],
+                  animate={{
+                    y: [0, -10, 0],
                   }}
                   transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut"
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
                   }}
                 >
                   <Squirrel className="w-24 h-24 text-gray-400" />
                 </motion.div>
-                </motion.div>
+              </motion.div>
             ) : (
               <motion.div
                 key={`orders-${activeTab}`}
@@ -251,7 +250,11 @@ const OrderCard = ({
       >
         <div className="relative h-48 w-full">
           <Image
-            src={"http://localhost:6969/uploads/items/" + order.item.images[0]}
+            src={
+              process.env.NEXT_PUBLIC_UPLOADS_URL +
+              "/items/" +
+              order.item.images[0]
+            }
             alt={order.item.name}
             fill
             className="object-cover"

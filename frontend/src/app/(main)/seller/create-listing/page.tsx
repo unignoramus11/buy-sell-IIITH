@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import Image from "next/image";
@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, X, Image as ImageIcon, Loader2 } from "lucide-react";
+import { Upload, X, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useItems } from "@/hooks/useItems";
 

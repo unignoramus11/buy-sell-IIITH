@@ -34,12 +34,15 @@ export const useChat = () => {
         { role: "assistant", content: data.reply },
       ]);
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage =
+        error && typeof error === "object" && "response" in error
+          ? (error.response as any)?.data?.message
+          : "Failed to get response from assistant";
+
       toast({
         title: "Error",
-        description:
-          error.response?.data?.message ||
-          "Failed to get response from assistant",
+        description: errorMessage,
         variant: "destructive",
       });
       // Remove the user message if the request failed

@@ -32,6 +32,7 @@ export const useItem = () => {
       const { data } = await api.get(`/cart/check/${itemId}`);
       return data.inCart;
     } catch (error) {
+      console.error(error);
       return false;
     }
   };

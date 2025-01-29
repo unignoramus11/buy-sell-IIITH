@@ -1,11 +1,16 @@
-// components/recaptcha.tsx
 "use client";
 
 import { useEffect } from "react";
 
 declare global {
   interface Window {
-    grecaptcha: any;
+    grecaptcha: {
+      ready: (callback: () => void) => void;
+      execute: (
+        siteKey: string,
+        options: { action: string }
+      ) => Promise<string>;
+    };
     onRecaptchaLoad?: () => void;
   }
 }

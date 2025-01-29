@@ -2,7 +2,6 @@
 
 import { use, useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -21,20 +20,17 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  User,
   Mail,
   Phone,
   Calendar,
   Star,
   Edit2,
-  Upload,
   Loader2,
   Camera,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { format, set } from "date-fns";
+import { format } from "date-fns";
 import { useProfile } from "@/hooks/useProfile";
 
 interface UserProfile {
@@ -229,7 +225,8 @@ export default function ProfilePage({
     } catch (error) {
       toast({
         title: "Upload failed",
-        description: "Failed to update profile picture. Please try again.",
+        description:
+          "Failed to update profile picture. Please try again. (" + error + ")",
         variant: "destructive",
       });
     } finally {
@@ -256,7 +253,9 @@ export default function ProfilePage({
                 <div className="relative w-32 h-32 mx-auto mb-4">
                   <Image
                     src={
-                      "http://localhost:6969/uploads/users/" + profile.avatar
+                      process.env.NEXT_PUBLIC_UPLOADS_URL +
+                      "/users/" +
+                      profile.avatar
                     }
                     alt={`${profile.firstName}'s avatar`}
                     fill
@@ -446,17 +445,17 @@ export default function ProfilePage({
               />
             </div>
 
-            {/* {!profile.isVerified && (
-                <div>
-                  <label className="text-sm font-medium">Email</label>
-                  <Input
-                    value={editForm.email}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, email: e.target.value })
-                    }
-                  />
-                </div>
-              )} */}
+            {!profile.isVerified && (
+              <div>
+                <label className="text-sm font-medium">Email</label>
+                <Input
+                  value={editForm.email}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, email: e.target.value })
+                  }
+                />
+              </div>
+            )}
           </div>
 
           <DialogFooter>
@@ -633,7 +632,11 @@ const ReviewCard = ({ review }: ReviewCardProps) => {
     <div className="flex gap-4 w-full overflow-scroll">
       <div className="relative w-10 h-10 flex-shrink-0">
         <Image
-          src={"http://localhost:6969/uploads/users/" + review.reviewer.avatar}
+          src={
+            process.env.NEXT_PUBLIC_UPLOADS_URL +
+            "/users/" +
+            review.reviewer.avatar
+          }
           alt={review.reviewer.firstName + " " + review.reviewer.lastName}
           fill
           className="rounded-full object-cover"

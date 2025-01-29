@@ -59,7 +59,7 @@ export const useCart = () => {
         quantity: item.quantity,
         image: item.item.images[0], // Assuming first image is main
         seller: {
-          id: item.item.seller,
+          
           name: `${sellers[item.item.seller].user.firstName} ${
             sellers[item.item.seller].user.lastName
           }`,
@@ -105,7 +105,7 @@ export const useCart = () => {
     message: string
   ) => {
     try {
-      const { data } = await api.post(`/cart/${itemId}/bargain`, {
+      await api.post(`/cart/${itemId}/bargain`, {
         price,
         message,
       });

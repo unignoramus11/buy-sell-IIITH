@@ -4,7 +4,7 @@ import React from "react";
 import { SparklesCore } from "@/components/ui/sparkles";
 import { FlipWords } from "@/components/ui/flip-words";
 
-export function SparklesPreview() {
+function Home() {
   React.useEffect(() => {
     setTimeout(() => {
       window.location.href = "/explore";
@@ -40,4 +40,4 @@ export function SparklesPreview() {
   );
 }
 
-export default SparklesPreview;
+export default Home;

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import api from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { set } from "date-fns";
 
 interface DashboardStats {
   totalEarnings: number;
@@ -16,9 +15,11 @@ interface DashboardStats {
 
 interface Order {
   id: string;
+  itemId: string;
   itemName: string;
   itemImage: string;
   buyer: {
+    id: string;
     name: string;
     email: string;
   };
@@ -31,9 +32,11 @@ interface Order {
 
 interface BargainRequest {
   id: string;
+  itemId: string;
   itemName: string;
   itemImage: string;
   buyer: {
+    id: string;
     name: string;
     email: string;
   };
@@ -89,7 +92,7 @@ export const useSeller = () => {
 
   const completeDelivery = async (orderId: string, otp: string) => {
     try {
-      const { data } = await api.post(`/seller/orders/${orderId}/complete`, {
+      await api.post(`/seller/orders/${orderId}/complete`, {
         otp,
       });
       toast({
@@ -123,7 +126,7 @@ export const useSeller = () => {
 
   const verifyDelivery = async (orderId: string, otp: string) => {
     try {
-      const { data } = await api.post(`/seller/orders/${orderId}/complete`, {
+      await api.post(`/seller/orders/${orderId}/complete`, {
         otp,
       });
       toast({
@@ -157,12 +160,9 @@ export const useSeller = () => {
 
   const respondToBargain = async (cartItemId: string, accept: boolean) => {
     try {
-      const { data } = await api.post(
-        `/seller/bargain-requests/${cartItemId}`,
-        {
-          accept,
-        }
-      );
+      await api.post(`/seller/bargain-requests/${cartItemId}`, {
+        accept,
+      });
       toast({
         title: accept ? "Bargain accepted" : "Bargain rejected",
         description: accept
@@ -182,7 +182,7 @@ export const useSeller = () => {
 
   const cancelOrder = async (orderId: string) => {
     try {
-      const { data } = await api.post(`/seller/orders/${orderId}/cancel`);
+      await api.post(`/seller/orders/${orderId}/cancel`);
       toast({
         title: "Order cancelled",
         description: "The order has been cancelled successfully",

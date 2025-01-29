@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
@@ -36,18 +36,12 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import {
-  TrendingUp,
-  TrendingDown,
   DollarSign,
   Package,
   Clock,
-  Check,
-  X,
-  Loader2,
 } from "lucide-react";
 import { useSeller } from "@/hooks/useSeller";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -114,7 +108,6 @@ export default function SellerDashboard() {
   const [showOTPDialog, setShowOTPDialog] = useState(false);
   const [otp, setOTP] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [counterOffer, setCounterOffer] = useState("");
   const { toast } = useToast();
   const {
     getDashboardStats,
@@ -126,7 +119,6 @@ export default function SellerDashboard() {
     getBargainRequests,
   } = useSeller();
   const [listings, setListings] = useState<Listing[]>([]);
-  const [activeTab, setActiveTab] = useState("pending");
   const [orders, setOrders] = useState<{
     pending: Order[];
     delivered: Order[];
@@ -327,7 +319,7 @@ export default function SellerDashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="pending" onValueChange={setActiveTab}>
+          <Tabs defaultValue="pending">
             <TabsList className="grid w-full grid-cols-3 bg-white/5">
               <TabsTrigger value="pending">
                 Pending ({orders.pending.length})
@@ -403,7 +395,8 @@ export default function SellerDashboard() {
                           <div className="relative w-12 h-12 rounded-lg overflow-hidden">
                             <Image
                               src={
-                                "http://localhost:6969/uploads/items/" +
+                                process.env.NEXT_PUBLIC_UPLOADS_URL +
+                                "/items/" +
                                 request.itemImage
                               }
                               alt={request.itemName}
@@ -608,7 +601,11 @@ const ListingsGrid = ({ listings }: { listings: Listing[] }) => {
         >
           <div className="relative aspect-square">
             <Image
-              src={"http://localhost:6969/uploads/items/" + listing.images[0]}
+              src={
+                process.env.NEXT_PUBLIC_UPLOADS_URL +
+                "/items/" +
+                listing.images[0]
+              }
               alt={listing && listing.name}
               fill
               className="object-cover rounded-t-lg"
@@ -681,7 +678,7 @@ const OrdersTable = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {orders.map((order, idx) => (
+            {orders.map((order) => (
               <TableRow
                 key={order.id}
                 className="hover:bg-white/5 transition-colors border-b border-white/10 last:border-0"
@@ -691,7 +688,8 @@ const OrdersTable = ({
                     <div className="relative w-12 h-12 rounded-lg overflow-hidden">
                       <Image
                         src={
-                          "http://localhost:6969/uploads/items/" +
+                          process.env.NEXT_PUBLIC_UPLOADS_URL +
+                          "/items/" +
                           order.itemImage
                         }
                         alt={order.itemName}

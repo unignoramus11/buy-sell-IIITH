@@ -4,14 +4,13 @@ import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { LoadingSpinner } from "./LoadingSpinner";
-import { set } from "date-fns";
 
 export default function ProtectedRoute({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
