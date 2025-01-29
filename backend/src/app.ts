@@ -10,6 +10,7 @@ import itemRoutes from "./routes/items";
 import orderRoutes from "./routes/orders";
 import sellerRoutes from "./routes/seller";
 import { errorHandler } from "./utils/errorHandler";
+import { imageMiddleware } from "./middleware/image";
 
 dotenv.config();
 
@@ -50,7 +51,7 @@ app.use(
 // Other Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use("/uploads", express.static("uploads"));
+app.use("/uploads", imageMiddleware, express.static("uploads"));
 
 // Routes
 app.use("/api/auth", authRoutes);

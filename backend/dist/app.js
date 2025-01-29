@@ -15,6 +15,7 @@ const items_1 = __importDefault(require("./routes/items"));
 const orders_1 = __importDefault(require("./routes/orders"));
 const seller_1 = __importDefault(require("./routes/seller"));
 const errorHandler_1 = require("./utils/errorHandler");
+const image_1 = require("./middleware/image");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 // Connect to MongoDB
@@ -46,7 +47,7 @@ app.use((0, cors_1.default)({
 // Other Middleware
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
-app.use("/uploads", express_1.default.static("uploads"));
+app.use("/uploads", image_1.imageMiddleware, express_1.default.static("uploads"));
 // Routes
 app.use("/api/auth", auth_1.default);
 app.use("/api/chat", chat_1.default);
