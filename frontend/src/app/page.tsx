@@ -7,7 +7,7 @@ import { FlipWords } from "@/components/ui/flip-words";
 function Home() {
   React.useEffect(() => {
     setTimeout(() => {
-      window.location.href = "/explore";
+      // window.location.href = "/explore";
     }, 5000);
   }, []);
 
