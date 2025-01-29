@@ -11,9 +11,12 @@ export const useItems = () => {
     try {
       const quantity = formData.get("quantity");
       const name = formData.get("name");
+
+      formData.set("quantity", "1");
+
       for (let i = 0; i < Number(quantity); i++) {
-        formData.set("quantity", "1");
-        formData.set("name", `${name} (${i + 1}/${quantity})`);
+        if (Number(quantity) > 1)
+          formData.set("name", `${name} (${i + 1}/${quantity})`);
         await api.post("/items", formData, {
           headers: {
             "Content-Type": "multipart/form-data",
