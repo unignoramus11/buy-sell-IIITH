@@ -19,8 +19,31 @@ dotenv_1.default.config();
 const app = (0, express_1.default)();
 // Connect to MongoDB
 (0, database_1.default)();
-// Middleware
-app.use((0, cors_1.default)());
+// CORS Configuration
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(",")
+    : ["https://bs-iiith.vercel.app", "http://localhost:3000"];
+app.use((0, cors_1.default)({
+    origin: function (origin, callback) {
+        // allow requests with no origin (like mobile apps or curl requests)
+        if (!origin)
+            return callback(null, true);
+        if (allowedOrigins.indexOf(origin) === -1) {
+            var msg = "The CORS policy for this site does not allow access from the specified Origin.";
+            return callback(new Error(msg), false);
+        }
+        return callback(null, true);
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: [
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+        "Accept",
+    ],
+}));
+// Other Middleware
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
 app.use("/uploads", express_1.default.static("uploads"));
