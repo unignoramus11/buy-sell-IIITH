@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
         port: process.env.NEXT_PUBLIC_API_PORT,
         pathname: "/uploads/**",
       },
+      {
+        protocol: "https",
+        hostname: "buy-sell-iiith.onrender.com",
+        pathname: "/uploads/**",
+      },
     ],
   },
 };
