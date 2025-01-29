@@ -51,6 +51,7 @@ interface Review {
   rating: number;
   comment: string;
   reviewer: {
+    _id: string;
     avatar: string;
     firstName: string;
     lastName: string;
@@ -639,12 +640,20 @@ const ReviewCard = ({ review }: ReviewCardProps) => {
           }
           alt={review.reviewer.firstName + " " + review.reviewer.lastName}
           fill
-          className="rounded-full object-cover"
+          className="rounded-full object-cover cursor-pointer"
+          onClick={() => {
+            window.location.href = "/profile/" + review.reviewer._id;
+          }}
         />
       </div>
       <div className="flex-1 w-[calc(100%-4rem)]">
         <div className="flex items-center justify-between">
-          <h4 className="font-medium">
+          <h4
+            className="font-medium cursor-pointer"
+            onClick={() => {
+              window.location.href = "/profile/" + review.reviewer._id;
+            }}
+          >
             {review.reviewer.firstName + " " + review.reviewer.lastName}
           </h4>
           <div className="flex items-center gap-1">
