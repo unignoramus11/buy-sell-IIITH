@@ -1,4 +1,5 @@
 import { Request } from "express";
+import { Document } from "mongoose";
 
 export interface AuthRequest extends Request {
   user?: {
@@ -8,6 +9,7 @@ export interface AuthRequest extends Request {
 }
 
 export interface UserDocument extends Document {
+  _id: string;
   firstName: string;
   lastName: string;
   email: string;

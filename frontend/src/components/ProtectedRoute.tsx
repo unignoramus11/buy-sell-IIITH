@@ -16,7 +16,6 @@ export default function ProtectedRoute({
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated && !pathname.startsWith("/auth")) {
-      console.log("Redirecting to login from", pathname);
       if (pathname !== "/") router.push("/auth/login");
       else
         setTimeout(() => {

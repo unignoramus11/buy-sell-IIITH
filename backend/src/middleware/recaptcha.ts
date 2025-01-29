@@ -73,8 +73,6 @@ export const verifyRecaptcha = async (
       return;
     }
 
-    console.log("Verifying reCAPTCHA token...", recaptchaToken);
-
     const score = await createAssessment({
       projectID: process.env.RECAPTCHA_PROJECT_ID!,
       recaptchaKey: process.env.RECAPTCHA_SITE_KEY!,

@@ -2,25 +2,119 @@
 
 import { useRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, User, Loader2, Sparkles } from "lucide-react";
+import { Send, Bot, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 import { useChat } from "@/hooks/use-chat";
+import { useAuth } from "@/contexts/AuthContext";
+import { useProfile } from "@/hooks/useProfile";
+import { useOrders } from "@/hooks/useOrders";
+import { useCart } from "@/hooks/useCart";
+import { useSeller } from "@/hooks/useSeller";
 
 const CHATBOT_NAME = "MarketMate";
 
+interface UserProfile {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  isVerified: boolean;
+  age: number;
+  contactNumber: string;
+  avatar: string;
+  overallRating: number;
+  sellerReviews: Review[];
+}
+
+interface Review {
+  _id: string;
+  rating: number;
+  comment: string;
+  reviewer: {
+    avatar: string;
+    firstName: string;
+    lastName: string;
+  };
+  createdAt: string;
+}
+
 export default function ChatPage() {
   const { messages, sendMessage, isLoading } = useChat();
+  const initializedRef = useRef(false);
   const [input, setInput] = useState("");
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
+  const { getProfile } = useProfile();
+  const { getOrders } = useOrders();
+  const { getCart } = useCart();
+  const {
+    getDashboardStats,
+    getOrders: getSellerOrders,
+    getSellerItems,
+    getBargainRequests,
+  } = useSeller();
+
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // Scroll to bottom when loading state changes
+  useEffect(() => {
+    scrollToBottom();
+  }, [isLoading]);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
+    const fetchProfileAndInitializeChat = async () => {
+      if (initializedRef.current || !user) return;
+      initializedRef.current = true;
+
+      const data = await getProfile(user.id);
+      const orders = await getOrders();
+      const cart = await getCart();
+      const sellerStats = await getDashboardStats();
+      const sellerOrders = await getSellerOrders();
+      const sellerItems = await getSellerItems();
+      const sellerBargainRequests = await getBargainRequests();
+
+      if (data) {
+        const message = `THIS IS A HIDDEN SYSTEM GENERATED MESSAGE, USE THIS INFO FOR GIVING INFORMED REPLIES. ALSO, GREET THE USER NOW. BE SARCASTIC IF YOU WISH, THOUGH. YOU CAN USE THE INFO FROM THEIR REVIEWS TO BE EVEN MORE SPECIFICALLY MEAN.
+          Hi, I'm ${user.firstName} ${user.lastName}. My email is ${
+          user.email
+        }. Here's all you need to know about me.: ${
+          "Profile: " +
+          JSON.stringify(data.user as UserProfile) +
+          "Cart: " +
+          JSON.stringify(cart) +
+          "Reviews: " +
+          JSON.stringify(data.reviews as Review[]) +
+          "Orders: " +
+          JSON.stringify(orders) +
+          "My seller stats: " +
+          JSON.stringify(sellerStats) +
+          "My sold orders: " +
+          JSON.stringify(sellerOrders) +
+          "My sold items: " +
+          JSON.stringify(sellerItems) +
+          "My bargain requests (I am the seller for these): " +
+          JSON.stringify(sellerBargainRequests)
+        }.`;
+        await sendMessage(message);
+      }
+    };
+
+    fetchProfileAndInitializeChat();
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,64 +158,79 @@ export default function ChatPage() {
         </div>
 
         <ScrollArea
-          ref={scrollRef}
+          ref={scrollAreaRef}
           className="flex-1 p-6 space-y-6 overflow-y-auto"
         >
           <div className="flex flex-col">
             <AnimatePresence initial={false}>
-              {messages.map((message, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className={`flex items-start gap-4 mb-6 ${
-                    message.role === "assistant"
-                      ? "flex-row"
-                      : "flex-row-reverse"
-                  }`}
-                >
+              {messages
+                .filter(
+                  (message) =>
+                    !message.content.startsWith(
+                      "THIS IS A HIDDEN SYSTEM GENERATED MESSAGE"
+                    )
+                )
+                .map((message, index) => (
                   <motion.div
-                    whileHover={{ scale: 1.1 }}
-                    className={`p-2 rounded-xl ${
+                    key={index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className={`flex items-start gap-4 mb-6 ${
                       message.role === "assistant"
-                        ? "bg-blue-100 text-blue-600"
-                        : "bg-gray-100 text-gray-600"
+                        ? "flex-row"
+                        : "flex-row-reverse"
                     }`}
                   >
-                    {message.role === "assistant" ? (
-                      <Bot className="h-6 w-6" />
-                    ) : (
-                      <User className="h-6 w-6" />
-                    )}
-                  </motion.div>
-                  <div
-                    className={`flex-1 space-y-2 ${
-                      message.role === "user" ? "text-right" : ""
-                    }`}
-                  >
-                    <p className="text-sm font-medium text-gray-700">
-                      {message.role === "assistant" ? CHATBOT_NAME : "You"}
-                    </p>
-                    <div
-                      className={`inline-block p-4 rounded-2xl ${
+                    <motion.div
+                      whileHover={{ scale: 1.1 }}
+                      className={`p-2 rounded-xl ${
                         message.role === "assistant"
-                          ? "bg-gradient-to-br from-blue-50 to-purple-50 text-gray-800"
-                          : "bg-gray-100 text-gray-800"
+                          ? "bg-blue-100 text-blue-600"
+                          : "bg-gray-100 text-gray-600"
                       }`}
                     >
                       {message.role === "assistant" ? (
-                        <TextGenerateEffect
-                          words={message.content}
-                          duration={0.5}
-                        />
+                        <Bot className="h-6 w-6" />
                       ) : (
-                        <p className="text-sm">{message.content}</p>
+                        <img
+                          src={
+                            process.env.NEXT_PUBLIC_UPLOADS_URL +
+                            "/users/" +
+                            user?.avatar
+                          }
+                          alt={user?.firstName + " " + user?.lastName}
+                          className="h-6 w-6 rounded-full"
+                        />
                       )}
+                    </motion.div>
+                    <div
+                      className={`flex-1 space-y-2 ${
+                        message.role === "user" ? "text-right" : ""
+                      }`}
+                    >
+                      <p className="text-sm font-medium text-gray-700">
+                        {message.role === "assistant" ? CHATBOT_NAME : "You"}
+                      </p>
+                      <div
+                        className={`inline-block p-4 rounded-2xl ${
+                          message.role === "assistant"
+                            ? "bg-gradient-to-br from-blue-50 to-purple-50 text-gray-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
+                        {message.role === "assistant" ? (
+                          <TextGenerateEffect
+                            words={message.content}
+                            duration={0.5}
+                          />
+                        ) : (
+                          <p className="text-sm break-all">{message.content}</p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                ))}
             </AnimatePresence>
             {isLoading && (
               <motion.div
@@ -140,7 +249,7 @@ export default function ChatPage() {
                 </div>
               </motion.div>
             )}
-            <div ref={scrollRef} />
+            <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
 

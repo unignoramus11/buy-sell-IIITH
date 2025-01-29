@@ -161,8 +161,6 @@ export const verifyCASTicket = async (
 
     const response = await fetch(validationUrl);
     const xmlResponse = await response.text();
-    console.log("ticket:", ticket);
-    console.log("CAS response:", xmlResponse);
     const result = (await parseStringPromise(xmlResponse)) as CASResponse;
 
     const authSuccess =
@@ -190,7 +188,7 @@ export const verifyCASTicket = async (
       await user.save();
 
       const token = jwt.sign(
-        { userId: user._id, email: user.email },
+        { id: user._id, email: user.email },
         process.env.JWT_SECRET!,
         { expiresIn: "24h" }
       );
@@ -261,7 +259,7 @@ export const completeCASRegistration = async (
 
     // Generate final authentication token
     const token = jwt.sign(
-      { userId: user._id, email: user.email },
+      { id: user._id, email: user.email },
       process.env.JWT_SECRET!,
       { expiresIn: "24h" }
     );
@@ -278,7 +276,6 @@ export const completeCASRegistration = async (
       },
     });
   } catch (error) {
-    console.error("Registration completion error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
