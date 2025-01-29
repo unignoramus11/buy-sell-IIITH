@@ -55,7 +55,7 @@ export const handleChat = async (
     if (!email || email !== "mohit.singh@research.iiit.ac.in") {
       res.json({
         reply:
-          "For obvious reasons, I ain't letting y'all access my apis freely 🤭",
+          "For obvious reasons, I ain't letting y'all access my api freely 🤭",
       });
       return;
     }
