@@ -50,7 +50,15 @@ export const handleChat = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { message, history } = req.body;
+    const { message, history, email } = req.body;
+
+    if (!email || email !== "mohit.singh@research.iiit.ac.in") {
+      res.json({
+        reply:
+          "For obvious reasons, I ain't letting y'all access my apis freely 🤭",
+      });
+      return;
+    }
 
     if (!message || !history) {
       res.status(400).json({ error: "Message and history are required" });

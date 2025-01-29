@@ -1,6 +1,7 @@
 import { useState } from "react";
 import api from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Message {
   role: "assistant" | "user";
@@ -11,6 +12,7 @@ export const useChat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const sendMessage = async (userMessage: string) => {
     if (!userMessage.trim() || isLoading) return;
@@ -27,6 +29,7 @@ export const useChat = () => {
       const { data } = await api.post("/chat", {
         message: userMessage,
         history: newMessages,
+        email: user?.email,
       });
 
       setMessages((prev) => [
