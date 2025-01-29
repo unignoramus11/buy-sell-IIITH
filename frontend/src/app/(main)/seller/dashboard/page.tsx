@@ -66,9 +66,11 @@ interface SalesData {
 
 interface Order {
   id: string;
+  itemId: string;
   itemName: string;
   itemImage: string;
   buyer: {
+    id: string;
     name: string;
     email: string;
   };
@@ -90,9 +92,11 @@ interface Listing {
 
 interface BargainRequest {
   id: string;
+  itemId: string;
   itemName: string;
   itemImage: string;
   buyer: {
+    id: string;
     name: string;
     email: string;
   };
@@ -324,7 +328,7 @@ export default function SellerDashboard() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="pending" onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-3 bg-white/5">
               <TabsTrigger value="pending">
                 Pending ({orders.pending.length})
               </TabsTrigger>
@@ -366,25 +370,37 @@ export default function SellerDashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Item</TableHead>
-                  <TableHead>Buyer</TableHead>
-                  <TableHead>Original Price</TableHead>
-                  <TableHead>Requested Price</TableHead>
-                  <TableHead>Message</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {!isLoading &&
-                  bargainRequests.map((request) => (
-                    <TableRow key={request.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="relative w-10 h-10">
+          <div className="rounded-lg border border-white/10 overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-white/10 bg-white/5">
+                    <TableHead className="text-gray-300 font-medium">
+                      Item
+                    </TableHead>
+                    <TableHead className="text-gray-300 font-medium">
+                      Buyer
+                    </TableHead>
+                    <TableHead className="text-gray-300 font-medium">
+                      Price Details
+                    </TableHead>
+                    <TableHead className="text-gray-300 font-medium">
+                      Message
+                    </TableHead>
+                    <TableHead className="text-gray-300 font-medium">
+                      Actions
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {bargainRequests.map((request) => (
+                    <TableRow
+                      key={request.id}
+                      className="hover:bg-white/5 transition-colors border-b border-white/10 last:border-0"
+                    >
+                      <TableCell className="py-4">
+                        <div className="flex items-center gap-4">
+                          <div className="relative w-12 h-12 rounded-lg overflow-hidden">
                             <Image
                               src={
                                 "http://localhost:6969/uploads/items/" +
@@ -392,32 +408,48 @@ export default function SellerDashboard() {
                               }
                               alt={request.itemName}
                               fill
-                              className="object-cover rounded"
+                              className="object-cover transition-transform hover:scale-110 duration-300"
                             />
                           </div>
-                          {request.itemName}
+                          <span
+                            className="font-medium text-white cursor-pointer"
+                            onClick={() => {
+                              window.location.href = `/explore/item/${request.itemId}`;
+                            }}
+                          >
+                            {request.itemName}
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div>
-                          <p>{request.buyer.name}</p>
+                        <div
+                          className="space-y-1 cursor-pointer"
+                          onClick={() => {
+                            window.location.href = `/profile/${request.buyer.id}`;
+                          }}
+                        >
+                          <p className="text-white font-medium">
+                            {request.buyer.name}
+                          </p>
                           <p className="text-sm text-gray-400">
                             {request.buyer.email}
                           </p>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <p className="text-white">
-                          ₹{request.originalPrice.toLocaleString()}
-                        </p>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <p className="font-medium text-white">
-                            ₹{request.requestedPrice.toLocaleString()}
-                          </p>
+                        <div className="space-y-2">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded">
+                            <span className="text-gray-400">Original:</span>
+                            <span className="font-medium text-white">
+                              ₹{request.originalPrice.toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-400">Requested:</span>
+                            <span className="font-medium text-white">
+                              ₹{request.requestedPrice.toLocaleString()}
+                            </span>
+                            <span className="text-xs bg-red-500/10 text-red-400 px-2 py-1 rounded-full">
                               -
                               {Math.round(
                                 ((request.originalPrice -
@@ -431,14 +463,15 @@ export default function SellerDashboard() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <p className="text-sm text-gray-400">
+                        <p className="text-gray-400 max-w-xs">
                           {request.message}
                         </p>
                       </TableCell>
                       <TableCell>
-                        <div className="flex gap-2">
+                        <div className="flex gap-3">
                           <Button
                             size="sm"
+                            className="bg-green-500 hover:bg-green-600 text-white transition-colors"
                             onClick={() =>
                               handleBargainResponse(request.cartItemId, true)
                             }
@@ -448,10 +481,10 @@ export default function SellerDashboard() {
                           <Button
                             size="sm"
                             variant="outline"
+                            className="border-red-500/50 text-red-400 hover:bg-red-500/10 transition-colors hover:text-white"
                             onClick={() =>
                               handleBargainResponse(request.cartItemId, false)
                             }
-                            className="text-black"
                           >
                             Reject
                           </Button>
@@ -459,15 +492,9 @@ export default function SellerDashboard() {
                       </TableCell>
                     </TableRow>
                   ))}
-                {!isLoading && bargainRequests.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
-                      <p className="text-gray-400">No bargain requests</p>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -488,7 +515,12 @@ export default function SellerDashboard() {
           </div>
         </CardHeader>
         <CardContent>
-          <ListingsGrid listings={listings} />
+          <ListingsGrid
+            listings={[
+              ...listings.filter((item) => item.isAvailable),
+              ...listings.filter((item) => !item.isAvailable),
+            ]}
+          />
         </CardContent>
       </Card>
 
@@ -567,7 +599,13 @@ const ListingsGrid = ({ listings }: { listings: Listing[] }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
       {listings.map((listing) => (
-        <Card key={listing && listing._id} className="bg-black border-white/10">
+        <Card
+          key={listing && listing._id}
+          className="bg-black border-white/10 cursor-pointer"
+          onClick={() =>
+            (window.location.href = `/explore/item/${listing._id}`)
+          }
+        >
           <div className="relative aspect-square">
             <Image
               src={"http://localhost:6969/uploads/items/" + listing.images[0]}
@@ -624,107 +662,136 @@ const OrdersTable = ({
   setShowCancelDialog,
 }: OrdersTableProps) => {
   return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Item</TableHead>
-            <TableHead>Buyer</TableHead>
-            <TableHead>Price</TableHead>
-            <TableHead>Status</TableHead>
-            {type === "pending" && <TableHead>Actions</TableHead>}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {orders.map((order) => (
-            <TableRow key={order.id}>
-              <TableCell>
-                <div className="flex items-center gap-3">
-                  <div className="relative w-10 h-10">
-                    <Image
-                      src={
-                        "http://localhost:6969/uploads/items/" + order.itemImage
-                      }
-                      alt={order.itemName}
-                      fill
-                      className="object-cover rounded"
-                    />
-                  </div>
-                  {order.itemName}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div>
-                  <p>{order.buyer.name}</p>
-                  <p className="text-sm text-gray-400">{order.buyer.email}</p>
-                </div>
-              </TableCell>
-              <TableCell>
-                <div>
-                  {order.bargainedPrice &&
-                  order.bargainedPrice !== order.originalPrice ? (
-                    <div className="space-y-1">
-                      <p className="font-medium text-white">
-                        ₹{order.bargainedPrice.toLocaleString()}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <p className="line-through text-gray-400">
-                          ₹{order.originalPrice.toLocaleString()}
-                        </p>
-                        <span className="text-xs bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded">
-                          -
-                          {Math.round(
-                            ((order.originalPrice - order.bargainedPrice) /
-                              order.originalPrice) *
-                              100
-                          )}
-                          %
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-white">
-                      ₹{order.originalPrice.toLocaleString()}
-                    </p>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell>
-                <Badge
-                  variant={
-                    order.status === "DELIVERED"
-                      ? "secondary"
-                      : order.status === "CANCELLED"
-                      ? "destructive"
-                      : "default"
-                  }
-                >
-                  {order.status}
-                </Badge>
-              </TableCell>
+    <div className="rounded-lg border border-white/10 overflow-hidden">
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-b border-white/10 bg-white/5">
+              <TableHead className="text-gray-300 font-medium">Item</TableHead>
+              <TableHead className="text-gray-300 font-medium">Buyer</TableHead>
+              <TableHead className="text-gray-300 font-medium">Price</TableHead>
+              <TableHead className="text-gray-300 font-medium">
+                Status
+              </TableHead>
               {type === "pending" && (
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={() => onDelivery?.(order.id)}>
-                      Complete Delivery
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => {
-                        setOrderToCancel?.(order);
-                        setShowCancelDialog?.(true);
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </TableCell>
+                <TableHead className="text-gray-300 font-medium">
+                  Actions
+                </TableHead>
               )}
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {orders.map((order, idx) => (
+              <TableRow
+                key={order.id}
+                className="hover:bg-white/5 transition-colors border-b border-white/10 last:border-0"
+              >
+                <TableCell className="py-4">
+                  <div className="flex items-center gap-4">
+                    <div className="relative w-12 h-12 rounded-lg overflow-hidden">
+                      <Image
+                        src={
+                          "http://localhost:6969/uploads/items/" +
+                          order.itemImage
+                        }
+                        alt={order.itemName}
+                        fill
+                        className="object-cover transition-transform hover:scale-110 duration-300"
+                      />
+                    </div>
+                    <span
+                      className="font-medium text-white cursor-pointer"
+                      onClick={() => {
+                        window.location.href = `/explore/item/${order.itemId}`;
+                      }}
+                    >
+                      {order.itemName}
+                    </span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div
+                    className="space-y-1 cursor-pointer"
+                    onClick={() => {
+                      window.location.href = `/profile/${order.buyer.id}`;
+                    }}
+                  >
+                    <p className="text-white font-medium">{order.buyer.name}</p>
+                    <p className="text-sm text-gray-400">{order.buyer.email}</p>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div>
+                    {order.bargainedPrice &&
+                    order.bargainedPrice !== order.originalPrice ? (
+                      <div className="space-y-2">
+                        <p className="font-semibold text-white">
+                          ₹{order.bargainedPrice.toLocaleString()}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm line-through text-gray-500">
+                            ₹{order.originalPrice.toLocaleString()}
+                          </p>
+                          <span className="text-xs bg-red-500/10 text-red-400 px-2 py-1 rounded-full">
+                            -
+                            {Math.round(
+                              ((order.originalPrice - order.bargainedPrice) /
+                                order.originalPrice) *
+                                100
+                            )}
+                            %
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="font-semibold text-white">
+                        ₹{order.originalPrice.toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge
+                    className={`px-3 py-1 ${
+                      order.status === "DELIVERED"
+                        ? "bg-green-500/10 text-green-400"
+                        : order.status === "CANCELLED"
+                        ? "bg-red-500/10 text-red-400"
+                        : "bg-blue-500/10 text-blue-400"
+                    }`}
+                  >
+                    {order.status}
+                  </Badge>
+                </TableCell>
+                {type === "pending" && (
+                  <TableCell>
+                    <div className="flex gap-3">
+                      <Button
+                        size="sm"
+                        className="bg-blue-500 hover:bg-blue-600 text-white transition-colors"
+                        onClick={() => onDelivery?.(order.id)}
+                      >
+                        Complete
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-red-500/50 text-red-400 hover:bg-red-500/10 transition-colors hover:text-white"
+                        onClick={() => {
+                          setOrderToCancel?.(order);
+                          setShowCancelDialog?.(true);
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 };

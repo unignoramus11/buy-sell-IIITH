@@ -185,9 +185,11 @@ export const getBargainRequests = async (req: AuthRequest, res: Response) => {
 
     const bargainRequests = validCartItems.map((cartItem) => ({
       id: cartItem._id,
+      itemId: (cartItem.item as any)._id,
       itemName: (cartItem.item as any).name,
       itemImage: (cartItem.item as any).images[0],
       buyer: {
+        id: (cartItem.user as any)._id,
         name: `${(cartItem.user as any).firstName} ${
           (cartItem.user as any).lastName
         }`,
@@ -292,6 +294,7 @@ export const getOrders = async (req: AuthRequest, res: Response) => {
 
     const formattedOrders = orders.map((order) => ({
       id: order._id,
+      itemId: (order.item as any)._id,
       itemName: (order.item as any).name,
       itemImage: (order.item as any).images[0],
       buyer: {
@@ -299,6 +302,7 @@ export const getOrders = async (req: AuthRequest, res: Response) => {
           (order.buyer as any).lastName
         }`,
         email: (order.buyer as any).email,
+        id: (order.buyer as any)._id,
       },
       originalPrice: order.price,
       bargainedPrice: order.bargainedPrice,

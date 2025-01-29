@@ -6,9 +6,15 @@ import Image from "next/image";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, CheckCircle2, XCircle, RefreshCcw } from "lucide-react";
+import {
+  Clock,
+  CheckCircle2,
+  XCircle,
+  RefreshCcw,
+  Squirrel,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useOrders } from "@/hooks/useOrders";
 import {
@@ -145,6 +151,26 @@ export default function OrdersPage() {
           <TabsContent value={activeTab}>
             {isLoading ? (
               <OrdersSkeleton />
+            ) : getFilteredOrders(activeTab).length === 0 ? (
+                <motion.div 
+                className="flex items-center justify-center h-[400] w-full"
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.25 }}
+                >
+                <motion.div
+                  animate={{ 
+                  y: [0, -10, 0],
+                  }}
+                  transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                  }}
+                >
+                  <Squirrel className="w-24 h-24 text-gray-400" />
+                </motion.div>
+                </motion.div>
             ) : (
               <motion.div
                 key={`orders-${activeTab}`}
