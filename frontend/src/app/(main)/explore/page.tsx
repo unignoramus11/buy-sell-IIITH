@@ -29,14 +29,22 @@ interface Item {
 }
 
 const categories = [
-  "Books",
-  "Electronics",
-  "Furniture",
-  "Clothing",
-  "Sports",
-  "Music",
-  "Art",
-  "Others",
+  "Academic Materials", // Textbooks, course materials, practice papers, lab manuals
+  "Electronics", // Laptops, calculators, arduino kits, tablets, phones
+  "Room Essentials", // Mattresses, pillows, reading lamps, storage boxes
+  "Study Equipment", // Study tables, chairs, whiteboards, desk organizers
+  "Sports & Fitness", // Cricket gear, gym equipment, sports shoes, badminton rackets
+  "Lab Equipment", // Lab coats, components, project materials
+  "Entertainment", // Musical instruments, gaming consoles, board games
+  "Bicycles", // Common mode of transport around campus
+  "Apparel", // College hoodies, t-shirts, formal wear for presentations
+  "Tech Accessories", // Hard drives, pen drives, laptop accessories, cables
+  "Books & Magazines", // Novels, magazines, competitive exam books
+  "Food & Appliances", // Mini fridges, electric kettles, induction plates
+  "Art & Stationery", // Drawing supplies, notebooks, project materials
+  "Event Equipment", // Speakers, lights, cameras for college events
+  "Transportation", // Bike/car pooling, local travel passes
+  "Others", // Miscellaneous items
 ];
 
 export default function ExplorePage() {
@@ -75,7 +83,9 @@ export default function ExplorePage() {
       );
     }
 
-    result = result.filter((item) => !isAuthLoading && user && item.seller.email !== user.email);
+    result = result.filter(
+      (item) => !isAuthLoading && user && item.seller.email !== user.email
+    );
 
     setFilteredItems(result);
   }, [items, searchQuery, selectedCategories]);

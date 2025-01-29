@@ -14,7 +14,7 @@ Key features of the platform:
 4. OTP verification for delivery completion
 5. Rating system for users
 6. Multiple images per item
-7. Categories include: Books, Electronics, Furniture, Clothing, Sports, Music, Art, Others
+7. Categories include: "Academic Materials", "Electronics", "Room Essentials", "Study Equipment", "Sports & Fitness", "Lab Equipment", "Entertainment", "Bicycles", "Apparel", "Tech Accessories", "Books & Magazines", "Food & Appliances", "Art & Stationery", "Event Equipment", "Transportation", "Others"
 
 Your role:
 - Help users understand how to use the platform
