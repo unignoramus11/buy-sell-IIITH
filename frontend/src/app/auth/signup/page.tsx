@@ -263,7 +263,7 @@ export default function SignupPage() {
               disabled={isLoading}
             >
               <Image
-                src="/cas-logo.png"
+                src="/iiith-logo.png"
                 alt="CAS"
                 width={20}
                 height={20}
