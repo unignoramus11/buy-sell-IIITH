@@ -20,6 +20,7 @@ First things first, let's get those environment variables in order:
 
 ```bash
 cd backend/
+npm install     # Installs the dependencies
 npm run build   # Builds the application
 npm run start   # Launches the backend server
 ```
@@ -28,6 +29,7 @@ npm run start   # Launches the backend server
 
 ```bash
 cd frontend/
+npm install     # Installs the dependencies
 npm run build   # Builds the application
 npm run start   # Launches the frontend server
 ```
