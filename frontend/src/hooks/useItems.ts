@@ -61,5 +61,27 @@ export const useItems = () => {
     }
   };
 
-  return { createItem, getItems, isLoading };
+  const deleteItem = async (id: string) => {
+    setIsLoading(true);
+    try {
+      await api.delete(`/items/${id}`);
+      toast({
+        title: "Item deleted",
+        description: "Your item has been removed successfully.",
+      });
+      return true;
+    } catch (error: any) {
+      toast({
+        title: "Failed to delete item",
+        description: error.response?.data?.message,
+        variant: "destructive",
+      });
+    } finally {
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 500);
+    }
+  };
+
+  return { createItem, getItems, isLoading, deleteItem };
 };

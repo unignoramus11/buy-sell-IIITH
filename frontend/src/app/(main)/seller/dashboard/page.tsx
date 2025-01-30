@@ -407,7 +407,7 @@ export default function SellerDashboard() {
                           <span
                             className="font-medium text-white cursor-pointer"
                             onClick={() => {
-                              window.location.href = `/explore/item/${request.itemId}`;
+                              router.push(`/explore/item/${request.itemId}`);
                             }}
                           >
                             {request.itemName}
@@ -418,7 +418,7 @@ export default function SellerDashboard() {
                         <div
                           className="space-y-1 cursor-pointer"
                           onClick={() => {
-                            window.location.href = `/profile/${request.buyer.id}`;
+                            router.push(`/profile/${request.buyer.id}`);
                           }}
                         >
                           <p className="text-white font-medium">
@@ -589,6 +589,8 @@ export default function SellerDashboard() {
 }
 
 const ListingsGrid = ({ listings }: { listings: Listing[] }) => {
+  const router = useRouter();
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
       {listings.map((listing) => (
@@ -596,7 +598,7 @@ const ListingsGrid = ({ listings }: { listings: Listing[] }) => {
           key={listing && listing._id}
           className="bg-black border-white/10 cursor-pointer"
           onClick={() =>
-            (window.location.href = `/explore/item/${listing._id}`)
+            router.push(`/explore/item/${listing._id}`)
           }
         >
           <div className="relative aspect-square">
@@ -658,6 +660,8 @@ const OrdersTable = ({
   setOrderToCancel,
   setShowCancelDialog,
 }: OrdersTableProps) => {
+  const router = useRouter();
+
   return (
     <div className="rounded-lg border border-white/10 overflow-hidden">
       <div className="overflow-x-auto">
@@ -700,7 +704,7 @@ const OrdersTable = ({
                     <span
                       className="font-medium text-white cursor-pointer"
                       onClick={() => {
-                        window.location.href = `/explore/item/${order.itemId}`;
+                        router.push(`/explore/item/${order.itemId}`);
                       }}
                     >
                       {order.itemName}
@@ -711,7 +715,7 @@ const OrdersTable = ({
                   <div
                     className="space-y-1 cursor-pointer"
                     onClick={() => {
-                      window.location.href = `/profile/${order.buyer.id}`;
+                      router.push(`/profile/${order.buyer.id}`);
                     }}
                   >
                     <p className="text-white font-medium">{order.buyer.name}</p>

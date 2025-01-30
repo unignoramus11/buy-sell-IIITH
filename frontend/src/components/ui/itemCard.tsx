@@ -3,6 +3,7 @@
 import Image from "next/image";
 import React, { ReactNode } from "react";
 import { CardBody, CardContainer, CardItem } from "./3d-card";
+import { useRouter } from "next/navigation";
 
 interface ItemCardProps {
   itemID?: string;
@@ -27,6 +28,8 @@ export function ItemCard({
   children,
   className,
 }: ItemCardProps) {
+  const router = useRouter();
+
   return (
     <div className="w-full px-4">
       <CardContainer className="inter-var w-full">
@@ -55,7 +58,7 @@ export function ItemCard({
               <CardItem translateZ="100" className="flex-1 w-full mt-4">
                 <div
                   className="relative w-full h-full group/image"
-                  onClick={() => (window.location.href = `/explore/item/${itemID}`)}
+                  onClick={() => router.push(`/explore/item/${itemID}`)}
                 >
                   <Image
                     src={imageUrl}

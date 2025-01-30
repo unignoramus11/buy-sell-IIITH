@@ -16,7 +16,6 @@ const imageMiddleware = (req, res, next) => {
         if (err) {
             const pathSegments = req.path.split("/");
             const category = pathSegments[1];
-            console.log(filePath);
             if (category === "items" || category === "users") {
                 const defaultPath = DEFAULT_IMAGES[category];
                 fs_1.default.access(defaultPath, fs_1.default.constants.F_OK, (defaultErr) => {

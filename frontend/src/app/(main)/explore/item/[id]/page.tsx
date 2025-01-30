@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Lens } from "@/components/ui/lens";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,8 +17,22 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowRight,
+  Trash2,
+  Loader2,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useItem } from "@/hooks/useItem";
+import { useItems } from "@/hooks/useItems";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/contexts/AuthContext";
 import { use } from "react";
@@ -55,7 +70,9 @@ export default function ItemPage({
   const { getItem, checkItemInCart, isOwnItem } = useItem();
   const { addToCart: addItemToCart } = useCart();
   const { user } = useAuth();
-
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { deleteItem } = useItems();
+  const router = useRouter();
   const [item, setItem] = useState<ItemDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -89,6 +106,26 @@ export default function ItemPage({
         description: "Item has been added to your cart successfully.",
       });
     }
+  };
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    if (!item) return;
+    const success = await deleteItem(item._id);
+    if (success) {
+      toast({
+        title: "Item deleted",
+        description: "Your item has been deleted successfully.",
+      });
+      router.push("/seller/dashboard");
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to delete item. Please try again.",
+        variant: "destructive",
+      });
+    }
+    setIsDeleting(false);
   };
 
   if (isLoading) {
@@ -230,7 +267,7 @@ export default function ItemPage({
 
           <Card
             onClick={() => {
-              window.location.href = "/profile/" + item.seller._id;
+              router.push("/profile/" + item.seller._id);
             }}
             className="cursor-pointer"
           >
@@ -286,9 +323,41 @@ export default function ItemPage({
           {/* Desktop Buttons */}
           <div className="hidden md:flex gap-4">
             {isOwnItem(item.seller.email) ? (
-              <Button size="lg" variant="outline" className="flex-1" disabled>
-                Cannot buy your own item
-              </Button>
+              <>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      size="lg"
+                      variant="destructive"
+                      disabled={isDeleting}
+                    >
+                      {isDeleting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Item</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete this item? This action
+                        cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDelete}>
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <Button size="lg" variant="outline" className="flex-1" disabled>
+                  Cannot buy your own item
+                </Button>
+              </>
             ) : isInCart ? (
               <Button size="lg" variant="outline" className="flex-1" asChild>
                 <Link href="/cart">
@@ -335,9 +404,41 @@ export default function ItemPage({
               <Share2 className="h-4 w-4" />
             </Button>
             {isOwnItem(item.seller.email) ? (
-              <Button size="lg" variant="outline" className="flex-1" disabled>
-                Cannot buy your own item
-              </Button>
+              <>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      size="lg"
+                      variant="destructive"
+                      disabled={isDeleting}
+                    >
+                      {isDeleting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Item</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete this item? This action
+                        cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDelete}>
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <Button size="lg" variant="outline" className="flex-1" disabled>
+                  Cannot buy your own item
+                </Button>
+              </>
             ) : isInCart ? (
               <Button size="lg" variant="outline" className="flex-1" asChild>
                 <Link href="/cart">
