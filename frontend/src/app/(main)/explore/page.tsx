@@ -181,7 +181,7 @@ export default function ExplorePage() {
 function ItemCard({ item }: { item: Item }) {
   return (
     <Link href={`/explore/item/${item._id}`}>
-      <CardContainer>
+      <CardContainer className="w-full">
         <CardBody className="bg-white dark:bg-black border border-gray-200 dark:border-gray-800 relative group/card w-full rounded-xl p-6">
           <CardItem
             translateZ="50"
