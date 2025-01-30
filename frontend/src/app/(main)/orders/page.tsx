@@ -152,7 +152,7 @@ export default function OrdersPage() {
               <OrdersSkeleton />
             ) : getFilteredOrders(activeTab).length === 0 ? (
               <motion.div
-                className="flex items-center justify-center h-[400] w-full"
+                className="flex items-center justify-center h-[400px] w-full"
                 initial={{ opacity: 0, scale: 0.5 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.25 }}
@@ -290,11 +290,12 @@ const OrderCard = ({
                 <p className="text-sm text-gray-500">Price</p>
                 <div className="flex items-center gap-2">
                   {order.bargainedPrice &&
-                    order.bargainedPrice !== order.price && (
+                    order.bargainedPrice !== order.price ? (
                       <span className="text-sm text-gray-500 line-through">
                         ₹{order.price.toLocaleString()}
                       </span>
-                    )}
+                    ) : null}
+                  {false && false}
                   <span className="text-lg font-bold">
                     ₹{(order.bargainedPrice ?? order.price).toLocaleString()}
                   </span>
@@ -322,7 +323,7 @@ const OrderCard = ({
         </div>
         {/* OTP Section for Pending Orders */}
         {type === "pending" && order.status === "PENDING" && (
-          <div className="space-y-2 mt-4">
+          <div className="space-y-2 mt-4 overflow-x-auto py-2">
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"

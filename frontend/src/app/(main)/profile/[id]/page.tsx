@@ -335,8 +335,17 @@ export default function ProfilePage({
 
               <Separator className="my-6" />
 
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
+              <div className="space-y-4 overflow-x-auto ">
+                <div
+                  className="flex items-center gap-3 cursor-pointer"
+                  onClick={() => {
+                    navigator.clipboard.writeText(profile.email);
+                    toast({
+                      title: "Copied",
+                      description: "Email ID copied to clipboard",
+                    });
+                  }}
+                >
                   <Mail className="w-5 h-5 text-gray-500" />
                   <div>
                     <p className="text-sm text-gray-500">Email</p>
@@ -347,7 +356,16 @@ export default function ProfilePage({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div
+                  className="flex items-center gap-3 cursor-pointer"
+                  onClick={() => {
+                    navigator.clipboard.writeText(profile.contactNumber);
+                    toast({
+                      title: "Copied",
+                      description: "Contact number copied to clipboard",
+                    });
+                  }}
+                >
                   <Phone className="w-5 h-5 text-gray-500" />
                   <div>
                     <p className="text-sm text-gray-500">Contact</p>
