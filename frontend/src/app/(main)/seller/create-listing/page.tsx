@@ -215,6 +215,7 @@ export default function CreateListing() {
                   onChange={handleInputChange}
                   required
                   min="1"
+                  max="20"
                   className="bg-white/5 border-white/10 focus:border-white/20 text-white"
                 />
               </div>

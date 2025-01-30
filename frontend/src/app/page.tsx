@@ -3,11 +3,14 @@
 import React from "react";
 import { SparklesCore } from "@/components/ui/sparkles";
 import { FlipWords } from "@/components/ui/flip-words";
+import { useRouter } from "next/navigation";
 
 function Home() {
+  const router = useRouter();
+
   React.useEffect(() => {
     setTimeout(() => {
-      window.location.href = "/explore";
+      router.push("/explore");
     }, 5000);
   }, []);
 

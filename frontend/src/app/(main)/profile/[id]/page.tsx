@@ -32,6 +32,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
 import { useProfile } from "@/hooks/useProfile";
+import { useRouter } from "next/navigation";
 
 interface UserProfile {
   _id: string;
@@ -629,6 +630,7 @@ interface ReviewCardProps {
 }
 
 const ReviewCard = ({ review }: ReviewCardProps) => {
+  const router = useRouter();
   return (
     <div className="flex gap-4 w-full overflow-scroll">
       <div className="relative w-10 h-10 flex-shrink-0">
@@ -642,7 +644,7 @@ const ReviewCard = ({ review }: ReviewCardProps) => {
           fill
           className="rounded-full object-cover cursor-pointer"
           onClick={() => {
-            window.location.href = "/profile/" + review.reviewer._id;
+            router.push("/profile/" + review.reviewer._id);
           }}
         />
       </div>
@@ -651,7 +653,7 @@ const ReviewCard = ({ review }: ReviewCardProps) => {
           <h4
             className="font-medium cursor-pointer"
             onClick={() => {
-              window.location.href = "/profile/" + review.reviewer._id;
+              router.push("/profile/" + review.reviewer._id);
             }}
           >
             {review.reviewer.firstName + " " + review.reviewer.lastName}

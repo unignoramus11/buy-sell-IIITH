@@ -61,10 +61,11 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Handle seller mode toggle
+  useEffect(() => {
+    setIsSellerMode(pathname.startsWith("/seller"));
+  }, [pathname]);
+
   const handleSellerModeToggle = () => {
-    setIsSellerMode(!isSellerMode);
-    // Redirect to appropriate dashboard
     router.push(isSellerMode ? "/explore" : "/seller/dashboard");
   };
 

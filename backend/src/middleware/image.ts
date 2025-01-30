@@ -17,9 +17,7 @@ export const imageMiddleware = (
   fs.access(filePath, fs.constants.F_OK, (err) => {
     if (err) {
       const pathSegments = req.path.split("/");
-        const category = pathSegments[1] as "items" | "users";
-        
-        console.log(filePath);
+      const category = pathSegments[1] as "items" | "users";
 
       if (category === "items" || category === "users") {
         const defaultPath = DEFAULT_IMAGES[category];
