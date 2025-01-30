@@ -275,7 +275,7 @@ export default function ItemPage({
               <CardTitle className="text-lg">Seller Information</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 overflow-x-auto pb-2">
                 <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden">
                   {user?.avatar ? (
                     <img
@@ -321,7 +321,7 @@ export default function ItemPage({
           </div>
 
           {/* Desktop Buttons */}
-          <div className="hidden md:flex gap-4">
+          <div className="hidden md:flex gap-4 flex-wrap">
             {isOwnItem(item.seller.email) ? (
               <>
                 <AlertDialog>
@@ -388,11 +388,11 @@ export default function ItemPage({
           </div>
 
           {/* Mobile Sticky Buttons */}
-          <div className="fixed bottom-0 left-0 right-0 md:hidden bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 p-4 flex gap-4">
+          <div className="fixed w-full bottom-0 left-0 right-0 md:hidden bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 p-4 flex gap-4">
             <Button
               size="lg"
               variant="outline"
-              className="w-12 flex items-center justify-center"
+              className="w-10 flex items-center justify-center"
               onClick={() => {
                 navigator.clipboard.writeText(window.location.href);
                 toast({
@@ -401,7 +401,7 @@ export default function ItemPage({
                 });
               }}
             >
-              <Share2 className="h-4 w-4" />
+              <Share2 className="h-4 w-[1/4]" />
             </Button>
             {isOwnItem(item.seller.email) ? (
               <>
@@ -411,6 +411,7 @@ export default function ItemPage({
                       size="lg"
                       variant="destructive"
                       disabled={isDeleting}
+                      className="w-[1/4]"
                     >
                       {isDeleting ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -435,19 +436,33 @@ export default function ItemPage({
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-                <Button size="lg" variant="outline" className="flex-1" disabled>
-                  Cannot buy your own item
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="flex-1 w-[2/4] px-0"
+                  disabled
+                >
+                  Can't buy own item
                 </Button>
               </>
             ) : isInCart ? (
-              <Button size="lg" variant="outline" className="flex-1" asChild>
+              <Button
+                size="lg"
+                variant="outline"
+                className="flex-1 w-[2/4] px-0"
+                asChild
+              >
                 <Link href="/cart">
                   Go to Cart
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
             ) : (
-              <Button size="lg" className="flex-1" onClick={addToCart}>
+              <Button
+                size="lg"
+                className="flex-1 w-[2/4] px-0"
+                onClick={addToCart}
+              >
                 <ShoppingCart className="mr-2 h-4 w-4" />
                 Add to Cart
               </Button>
