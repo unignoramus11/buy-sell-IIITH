@@ -59,27 +59,26 @@ Don't overuse these, be tasteful. You're here to make the experience far worse f
 const handleChat = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { message, history, email } = req.body;
-        if (!email || email !== "mohit.singh@research.iiit.ac.in") {
-            res.json({
-                reply: "For obvious reasons, I ain't letting y'all access my api freely 🤭",
-            });
-            return;
-        }
-        if (!message || !history) {
-            res.status(400).json({ error: "Message and history are required" });
-            return;
-        }
-        const completion = yield anthropic.messages.create({
-            model: "claude-3-5-sonnet-20241022",
-            max_tokens: 150,
-            temperature: 0.7,
-            system: SYSTEM_PROMPT,
-            messages: history,
+        res.json({
+            reply: "For obvious reasons, I ain't letting y'all access my api freely 🤭",
         });
-        const reply = completion.content[0].type === "text"
-            ? completion.content[0].text
-            : "I'm sorry, I couldn't process your request.";
-        res.json({ reply });
+        return;
+        // if (!message || !history) {
+        //   res.status(400).json({ error: "Message and history are required" });
+        //   return;
+        // }
+        // const completion = await anthropic.messages.create({
+        //   model: "claude-3-5-sonnet-20241022",
+        //   max_tokens: 150,
+        //   temperature: 0.7,
+        //   system: SYSTEM_PROMPT,
+        //   messages: history,
+        // });
+        // const reply =
+        //   completion.content[0].type === "text"
+        //     ? completion.content[0].text
+        //     : "I'm sorry, I couldn't process your request.";
+        // res.json({ reply });
     }
     catch (error) {
         console.error("Chat error:", error);
