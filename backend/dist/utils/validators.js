@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.validatePhoneNumber = exports.validatePassword = exports.validateEmail = void 0;
 const validateEmail = (email) => {
-    const regex = /^[a-zA-Z0-9._%+-]+@[^\s@]+\.iiit\.ac\.in$/;
+    const regex = /^[a-zA-Z0-9._%+-]+(@[^\s@]+\.iiit\.ac\.in|@iiit\.ac\.in)$/;
     return regex.test(email);
 };
 exports.validateEmail = validateEmail;
