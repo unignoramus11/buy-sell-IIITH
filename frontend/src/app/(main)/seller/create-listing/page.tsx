@@ -120,6 +120,24 @@ export default function CreateListing() {
       return;
     }
 
+    if (Number(formData.price) > 99999) {
+      toast({
+        title: "Price too high",
+        description: "Contact dev directly for large transactions. 😏",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (Number(formData.quantity) > 20) {
+      toast({
+        title: "Quantity too high",
+        description: "How many factories do you own? 😭",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     const newFormData = new FormData();
@@ -215,7 +233,6 @@ export default function CreateListing() {
                   onChange={handleInputChange}
                   required
                   min="1"
-                  max="20"
                   className="bg-white/5 border-white/10 focus:border-white/20 text-white"
                 />
               </div>
