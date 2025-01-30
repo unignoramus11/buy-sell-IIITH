@@ -442,7 +442,7 @@ export default function ItemPage({
                   className="flex-1 w-[2/4] px-0"
                   disabled
                 >
-                  Can't buy own item
+                  Can&apos;t buy own item
                 </Button>
               </>
             ) : isInCart ? (
