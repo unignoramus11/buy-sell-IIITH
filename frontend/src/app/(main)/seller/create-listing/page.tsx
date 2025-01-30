@@ -120,6 +120,15 @@ export default function CreateListing() {
       return;
     }
 
+    if (formData.name.length > 50 || formData.description.length > 500) {
+      toast({
+        title: "Character limit exceeded",
+        description: "I ain't hosting no stories here. 🤨",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (Number(formData.price) > 99999) {
       toast({
         title: "Price too high",
