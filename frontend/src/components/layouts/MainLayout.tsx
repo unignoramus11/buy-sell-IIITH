@@ -159,6 +159,13 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
                 <Link href="/" className="text-2xl font-bold">
                   <img src="/logo.png" alt="logo" className="w-11 h-11" />
                 </Link>
+                &nbsp;by&nbsp;
+                <Link
+                  href="https://github.com/unignoramus11"
+                  className="font-bold"
+                >
+                  unignoramus
+                </Link>
               </div>
 
               {/* Navigation Links */}
@@ -185,9 +192,9 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
                       }`}
                     >
                       <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center overflow-hidden ${
-                          isSellerMode ? "bg-white/10" : "bg-black/10"
-                        }`}
+                        className={
+                          "w-10 h-10 rounded-full flex items-center justify-center overflow-hidden"
+                        }
                       >
                         {user?.avatar ? (
                           <img
