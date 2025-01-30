@@ -232,7 +232,7 @@ export default function ChatPage() {
                   </motion.div>
                 ))}
             </AnimatePresence>
-            {isLoading && (
+            {(isLoading || !initializedRef) && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
