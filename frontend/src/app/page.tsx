@@ -11,13 +11,13 @@ function Home() {
   React.useEffect(() => {
     setTimeout(() => {
       router.push("/explore");
-    }, 5000);
+    }, 1500);
   }, []);
 
   return (
     <div className="h-screen w-full bg-black flex flex-col items-center justify-center overflow-hidden">
       <h1 className="text-[15vw] lg:text-9xl font-bold text-center text-white relative z-20 whitespace-nowrap">
-        <FlipWords words={["Buy", "Sell"]} className="text-white" />@ IIITH
+        <FlipWords words={["Buy", "Sell"]} className="text-white" duration={1000} />@ IIITH
       </h1>
       <div className="w-[40vw] h-10 lg:h-40 relative">
         {/* Gradients */}
