@@ -30,7 +30,7 @@ const userSchema = new mongoose_1.default.Schema({
         required: true,
         unique: true,
         trim: true,
-        match: /^[a-zA-Z0-9._%+-]+@[^\s@]+\.iiit\.ac\.in$/,
+        match: /^[a-zA-Z0-9._%+-]+(@[^\s@]+\.iiit\.ac\.in|@iiit\.ac\.in)$/,
     },
     isVerified: {
         type: Boolean,
