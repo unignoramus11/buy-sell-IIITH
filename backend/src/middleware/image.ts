@@ -7,6 +7,10 @@ import { promisify } from "util";
 const access = promisify(fs.access);
 const stat = promisify(fs.stat);
 
+// Configure Sharp
+sharp.cache(false);
+sharp.concurrency(1);
+
 // Image size limit from environment variable (default: 250KB)
 const IMAGE_SIZE_LIMIT_KB = parseInt(
   process.env.IMAGE_SIZE_LIMIT_KB || "250",
@@ -24,26 +28,56 @@ const getFileSizeInKB = async (filePath: string): Promise<number> => {
   return stats.size / 1024;
 };
 
-// Helper function to compress image
+// Helper function to compress image with memory optimization
 const compressImage = async (
   inputPath: string,
-  quality: number = 80
+  quality: number = 80,
+  maxSize: number = 1000
 ): Promise<Buffer> => {
-  const image = sharp(inputPath);
+  const image = sharp(inputPath, {
+    limitInputPixels: 40000000, // 40 megapixels limit
+    sequentialRead: true,
+  });
+
   const metadata = await image.metadata();
+
+  if (!metadata.width || !metadata.height) {
+    throw new Error("Could not read image dimensions");
+  }
+
+  // Calculate resize dimensions while maintaining aspect ratio
+  const aspectRatio = metadata.width / metadata.height;
+  let width = metadata.width;
+  let height = metadata.height;
+
+  if (width > maxSize || height > maxSize) {
+    if (width > height) {
+      width = maxSize;
+      height = Math.round(maxSize / aspectRatio);
+    } else {
+      height = maxSize;
+      width = Math.round(maxSize * aspectRatio);
+    }
+  }
+
+  // Always resize to reasonable dimensions first
+  image.resize(width, height, {
+    fit: "inside",
+    withoutEnlargement: true,
+  });
 
   // Determine format and compress accordingly
   const format = metadata.format;
   switch (format) {
     case "jpeg":
     case "jpg":
-      return image.jpeg({ quality }).toBuffer();
+      return image.jpeg({ quality, progressive: true }).toBuffer();
     case "png":
-      return image.png({ quality }).toBuffer();
+      return image.png({ quality, progressive: true }).toBuffer();
     case "webp":
       return image.webp({ quality }).toBuffer();
     default:
-      return image.jpeg({ quality }).toBuffer();
+      return image.jpeg({ quality, progressive: true }).toBuffer();
   }
 };
 
@@ -71,33 +105,29 @@ const compressionMiddleware = async (
       return next();
     }
 
-    // Start with quality 80 and reduce if needed
-    let quality = 80;
-    let compressedBuffer: Buffer;
+    try {
+      // First attempt: try with default quality and size reduction
+      let compressedBuffer = await compressImage(filePath, 80, 1500);
+      let compressedSize = compressedBuffer.length / 1024;
 
-    do {
-      compressedBuffer = await compressImage(filePath, quality);
-      const compressedSize = compressedBuffer.length / 1024;
+      // If still too large, try more aggressive compression
+      if (compressedSize > IMAGE_SIZE_LIMIT_KB) {
+        compressedBuffer = await compressImage(filePath, 60, 1000);
+        compressedSize = compressedBuffer.length / 1024;
 
-      if (compressedSize <= IMAGE_SIZE_LIMIT_KB) {
-        break;
+        // If still too large, try maximum compression
+        if (compressedSize > IMAGE_SIZE_LIMIT_KB) {
+          compressedBuffer = await compressImage(filePath, 40, 800);
+        }
       }
 
-      quality -= 10;
-
-      // Prevent infinite loop and ensure minimum quality
-      if (quality < 10) {
-        // If we can't compress enough with quality, try reducing dimensions
-        compressedBuffer = await sharp(filePath)
-          .resize(1000, 1000, { fit: "inside" })
-          .jpeg({ quality: 60 })
-          .toBuffer();
-        break;
-      }
-    } while (true);
-
-    // Save the compressed image
-    await fs.promises.writeFile(filePath, compressedBuffer);
+      // Save the compressed image
+      await fs.promises.writeFile(filePath, compressedBuffer);
+    } catch (compressionError) {
+      console.error("Error compressing image:", compressionError);
+      // Continue without compression if there's an error
+      return next();
+    }
 
     next();
   } catch (error) {

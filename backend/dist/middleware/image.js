@@ -19,6 +19,9 @@ const sharp_1 = __importDefault(require("sharp"));
 const util_1 = require("util");
 const access = (0, util_1.promisify)(fs_1.default.access);
 const stat = (0, util_1.promisify)(fs_1.default.stat);
+// Configure Sharp
+sharp_1.default.cache(false);
+sharp_1.default.concurrency(1);
 // Image size limit from environment variable (default: 250KB)
 const IMAGE_SIZE_LIMIT_KB = parseInt(process.env.IMAGE_SIZE_LIMIT_KB || "250", 10);
 const DEFAULT_IMAGES = {
@@ -30,22 +33,47 @@ const getFileSizeInKB = (filePath) => __awaiter(void 0, void 0, void 0, function
     const stats = yield stat(filePath);
     return stats.size / 1024;
 });
-// Helper function to compress image
-const compressImage = (inputPath_1, ...args_1) => __awaiter(void 0, [inputPath_1, ...args_1], void 0, function* (inputPath, quality = 80) {
-    const image = (0, sharp_1.default)(inputPath);
+// Helper function to compress image with memory optimization
+const compressImage = (inputPath_1, ...args_1) => __awaiter(void 0, [inputPath_1, ...args_1], void 0, function* (inputPath, quality = 80, maxSize = 1000) {
+    const image = (0, sharp_1.default)(inputPath, {
+        limitInputPixels: 40000000, // 40 megapixels limit
+        sequentialRead: true,
+    });
     const metadata = yield image.metadata();
+    if (!metadata.width || !metadata.height) {
+        throw new Error("Could not read image dimensions");
+    }
+    // Calculate resize dimensions while maintaining aspect ratio
+    const aspectRatio = metadata.width / metadata.height;
+    let width = metadata.width;
+    let height = metadata.height;
+    if (width > maxSize || height > maxSize) {
+        if (width > height) {
+            width = maxSize;
+            height = Math.round(maxSize / aspectRatio);
+        }
+        else {
+            height = maxSize;
+            width = Math.round(maxSize * aspectRatio);
+        }
+    }
+    // Always resize to reasonable dimensions first
+    image.resize(width, height, {
+        fit: "inside",
+        withoutEnlargement: true,
+    });
     // Determine format and compress accordingly
     const format = metadata.format;
     switch (format) {
         case "jpeg":
         case "jpg":
-            return image.jpeg({ quality }).toBuffer();
+            return image.jpeg({ quality, progressive: true }).toBuffer();
         case "png":
-            return image.png({ quality }).toBuffer();
+            return image.png({ quality, progressive: true }).toBuffer();
         case "webp":
             return image.webp({ quality }).toBuffer();
         default:
-            return image.jpeg({ quality }).toBuffer();
+            return image.jpeg({ quality, progressive: true }).toBuffer();
     }
 });
 // Compression middleware
@@ -65,28 +93,27 @@ const compressionMiddleware = (req, res, next) => __awaiter(void 0, void 0, void
         if (fileSize <= IMAGE_SIZE_LIMIT_KB) {
             return next();
         }
-        // Start with quality 80 and reduce if needed
-        let quality = 80;
-        let compressedBuffer;
-        do {
-            compressedBuffer = yield compressImage(filePath, quality);
-            const compressedSize = compressedBuffer.length / 1024;
-            if (compressedSize <= IMAGE_SIZE_LIMIT_KB) {
-                break;
+        try {
+            // First attempt: try with default quality and size reduction
+            let compressedBuffer = yield compressImage(filePath, 80, 1500);
+            let compressedSize = compressedBuffer.length / 1024;
+            // If still too large, try more aggressive compression
+            if (compressedSize > IMAGE_SIZE_LIMIT_KB) {
+                compressedBuffer = yield compressImage(filePath, 60, 1000);
+                compressedSize = compressedBuffer.length / 1024;
+                // If still too large, try maximum compression
+                if (compressedSize > IMAGE_SIZE_LIMIT_KB) {
+                    compressedBuffer = yield compressImage(filePath, 40, 800);
+                }
             }
-            quality -= 10;
-            // Prevent infinite loop and ensure minimum quality
-            if (quality < 10) {
-                // If we can't compress enough with quality, try reducing dimensions
-                compressedBuffer = yield (0, sharp_1.default)(filePath)
-                    .resize(1000, 1000, { fit: "inside" })
-                    .jpeg({ quality: 60 })
-                    .toBuffer();
-                break;
-            }
-        } while (true);
-        // Save the compressed image
-        yield fs_1.default.promises.writeFile(filePath, compressedBuffer);
+            // Save the compressed image
+            yield fs_1.default.promises.writeFile(filePath, compressedBuffer);
+        }
+        catch (compressionError) {
+            console.error("Error compressing image:", compressionError);
+            // Continue without compression if there's an error
+            return next();
+        }
         next();
     }
     catch (error) {
