@@ -25,14 +25,14 @@ export const useItems = () => {
       }
 
       toast({
-        title: "Item created",
-        description: "Your item has been listed successfully.",
+        title: "Listing created",
+        description: "Your listing has been listed successfully.",
       });
 
       return true;
     } catch (error: any) {
       toast({
-        title: "Failed to create item",
+        title: "Failed to create listing",
         description: error.response?.data?.message || "Please try again",
         variant: "destructive",
       });

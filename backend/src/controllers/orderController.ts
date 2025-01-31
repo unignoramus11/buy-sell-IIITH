@@ -27,15 +27,19 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
           .populate("item.seller");
 
         if (!cartItem) {
-          throw new Error(`Cart item ${cartItemId} not found`);
+          res
+            .status(404)
+            .json({ message: `Cart item ${cartItemId} not found` });
+          return;
         }
 
         // Check if item is still available and has enough quantity
         const item = await Item.findById(cartItem.item);
         if (!item || !item.isAvailable || item.quantity < cartItem.quantity) {
-          throw new Error(
-            `Item ${item?.name} is not available in requested quantity`
-          );
+          res.status(400).json({
+            message: `Item ${item?.name} is not available in requested quantity`,
+          });
+          return;
         }
 
         // Generate OTP and set expiry (5 minutes from now)

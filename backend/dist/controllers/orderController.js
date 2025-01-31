@@ -31,12 +31,18 @@ const createOrder = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                     .populate("item")
                     .populate("item.seller");
                 if (!cartItem) {
-                    throw new Error(`Cart item ${cartItemId} not found`);
+                    res
+                        .status(404)
+                        .json({ message: `Cart item ${cartItemId} not found` });
+                    return;
                 }
                 // Check if item is still available and has enough quantity
                 const item = yield Item_1.default.findById(cartItem.item);
                 if (!item || !item.isAvailable || item.quantity < cartItem.quantity) {
-                    throw new Error(`Item ${item === null || item === void 0 ? void 0 : item.name} is not available in requested quantity`);
+                    res.status(400).json({
+                        message: `Item ${item === null || item === void 0 ? void 0 : item.name} is not available in requested quantity`,
+                    });
+                    return;
                 }
                 // Generate OTP and set expiry (5 minutes from now)
                 const otp = (0, helpers_1.generateOTP)();

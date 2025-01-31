@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import Item from "../models/Item";
+import User from "../models/User";
 
 interface AuthRequest extends Request {
   user?: {
@@ -14,6 +15,22 @@ export const createItem = async (req: AuthRequest, res: Response) => {
     const images = (req.files as Express.Multer.File[]).map(
       (file) => file.filename
     );
+
+    // Check if user ID exists
+    if (!req.user?.id) {
+      res.status(401).json({ message: "Unauthorized - User ID missing" });
+      return;
+    }
+
+    // Check verification status
+    const user = await User.findById(req.user.id);
+    if (!user || !user.isVerified) {
+      res.status(403).json({
+        message:
+          "Forbidden - account not verified. Please verify your email first.",
+      });
+      return;
+    }
 
     const item = new Item({
       name,

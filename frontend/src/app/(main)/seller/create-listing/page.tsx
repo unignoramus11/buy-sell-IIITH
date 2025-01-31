@@ -168,12 +168,6 @@ export default function CreateListing() {
         description: "Your item has been listed successfully.",
       });
       router.push("/seller/dashboard");
-    } else {
-      toast({
-        title: "Error",
-        description: "Failed to create listing. Please try again.",
-        variant: "destructive",
-      });
     }
     setIsSubmitting(false);
   };

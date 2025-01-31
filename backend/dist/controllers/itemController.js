@@ -14,10 +14,25 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteItem = exports.updateItem = exports.getItem = exports.getItems = exports.createItem = void 0;
 const Item_1 = __importDefault(require("../models/Item"));
+const User_1 = __importDefault(require("../models/User"));
 const createItem = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
         const { name, description, price, quantity, categories } = req.body;
         const images = req.files.map((file) => file.filename);
+        // Check if user ID exists
+        if (!((_a = req.user) === null || _a === void 0 ? void 0 : _a.id)) {
+            res.status(401).json({ message: "Unauthorized - User ID missing" });
+            return;
+        }
+        // Check verification status
+        const user = yield User_1.default.findById(req.user.id);
+        if (!user || !user.isVerified) {
+            res.status(403).json({
+                message: "Forbidden - account not verified. Please verify your email first.",
+            });
+            return;
+        }
         const item = new Item_1.default({
             name,
             description,
