@@ -53,6 +53,16 @@ export const updateProfile = async (
       updates.avatar = req.file.filename;
     }
 
+    // Check if email id is already in use by another user
+    if (updates.email) {
+      const existingUser = await User.findOne({ email: updates.email });
+      // check if existing user is not the same user
+      if (existingUser && existingUser._id.toString() !== req.user!.id) {
+        res.status(400).json({ message: "Email ID already in use" });
+        return;
+      }
+    }
+
     const updatedUser = await User.findByIdAndUpdate(
       req.user!.id,
       { $set: updates },

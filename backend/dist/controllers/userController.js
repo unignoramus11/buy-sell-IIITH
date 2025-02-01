@@ -48,6 +48,15 @@ const updateProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         if (req.file) {
             updates.avatar = req.file.filename;
         }
+        // Check if email id is already in use by another user
+        if (updates.email) {
+            const existingUser = yield User_1.default.findOne({ email: updates.email });
+            // check if existing user is not the same user
+            if (existingUser && existingUser._id.toString() !== req.user.id) {
+                res.status(400).json({ message: "Email ID already in use" });
+                return;
+            }
+        }
         const updatedUser = yield User_1.default.findByIdAndUpdate(req.user.id, { $set: updates }, { new: true, runValidators: true }).select("-password");
         if (!updatedUser) {
             res.status(404).json({ message: "User not found" });

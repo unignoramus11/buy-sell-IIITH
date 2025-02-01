@@ -166,10 +166,25 @@ export default function ProfilePage({
   };
 
   const handleEditSubmit = async () => {
+    // Validate email domain
+    if (
+      !editForm.email.endsWith("@iiit.ac.in") &&
+      (!editForm.email.includes("@") || !editForm.email.endsWith(".iiit.ac.in"))
+    ) {
+      toast({
+        title: "Invalid email",
+        description: "Please use your IIIT email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const formData = new FormData();
     Object.entries(editForm).forEach(([key, value]) => {
       formData.append(key, value);
     });
+
+    console.log(formData);
 
     const result = await updateProfile(formData);
     if (result) {
