@@ -146,7 +146,7 @@ export const completeDelivery = async (
     // Verify OTP
     const isValidOTP = await order.compareOTP(otp);
     if (!isValidOTP) {
-      res.status(400).json({ message: "Invalid OTP" });
+      res.status(400).json({ message: "Incorrect OTP" });
       return;
     }
 

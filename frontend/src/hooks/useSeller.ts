@@ -90,26 +90,6 @@ export const useSeller = () => {
     }
   };
 
-  const completeDelivery = async (orderId: string, otp: string) => {
-    try {
-      await api.post(`/seller/orders/${orderId}/complete`, {
-        otp,
-      });
-      toast({
-        title: "Delivery completed",
-        description: "Order has been marked as delivered",
-      });
-      return true;
-    } catch (error: any) {
-      toast({
-        title: "Failed to complete delivery",
-        description: error.response?.data?.message || "Invalid OTP",
-        variant: "destructive",
-      });
-      return false;
-    }
-  };
-
   const getSellerItems = async () => {
     try {
       const { data } = await api.get("/seller/items");
@@ -137,7 +117,7 @@ export const useSeller = () => {
     } catch (error: any) {
       toast({
         title: "Verification failed",
-        description: error.response?.data?.message || "Invalid OTP",
+        description: error.response?.data?.message || "Incorrect OTP",
         variant: "destructive",
       });
       return false;
@@ -201,7 +181,6 @@ export const useSeller = () => {
   return {
     getDashboardStats,
     getOrders,
-    completeDelivery,
     isLoading,
     getSellerItems,
     verifyDelivery,
