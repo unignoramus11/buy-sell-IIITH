@@ -24,7 +24,7 @@ export default function ProtectedRoute({
     }
 
     if (!isLoading && isAuthenticated && pathname.startsWith("/auth")) {
-      router.push("/explore");
+      router.push("/profile");
     }
 
     if (!isLoading && isAuthenticated && pathname === "/") {
