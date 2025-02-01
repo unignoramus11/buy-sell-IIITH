@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.cancelOrder = exports.regenerateOTP = exports.verifyDelivery = exports.getOrders = exports.createOrder = void 0;
+exports.cancelOrder = exports.regenerateOTP = exports.getOrders = exports.createOrder = void 0;
 const Order_1 = __importDefault(require("../models/Order"));
 const Item_1 = __importDefault(require("../models/Item"));
 const CartItem_1 = __importDefault(require("../models/CartItem"));
@@ -119,41 +119,6 @@ const getOrders = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.getOrders = getOrders;
-const verifyDelivery = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const { orderId, otp } = req.body;
-        const order = yield Order_1.default.findOne({
-            _id: orderId,
-            seller: req.user.id,
-            status: "PENDING",
-        });
-        if (!order) {
-            res.status(404).json({ message: "Order not found" });
-            return;
-        }
-        // Check if OTP is expired
-        if (new Date() > order.otpExpiry) {
-            res.status(400).json({ message: "OTP has expired" });
-            return;
-        }
-        // Verify OTP
-        const isValid = yield order.compareOTP(otp);
-        if (!isValid) {
-            res.status(400).json({ message: "Invalid OTP" });
-            return;
-        }
-        order.status = "DELIVERED";
-        yield order.save();
-        res.json({
-            message: "Delivery verified successfully",
-            order,
-        });
-    }
-    catch (error) {
-        res.status(500).json({ message: "Server error", error });
-    }
-});
-exports.verifyDelivery = verifyDelivery;
 const regenerateOTP = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const order = yield Order_1.default.findOne({
