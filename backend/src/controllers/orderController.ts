@@ -122,48 +122,6 @@ export const getOrders = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const verifyDelivery = async (
-  req: AuthRequest,
-  res: Response
-): Promise<void> => {
-  try {
-    const { orderId, otp } = req.body;
-    const order = await Order.findOne({
-      _id: orderId,
-      seller: req.user!.id,
-      status: "PENDING",
-    });
-
-    if (!order) {
-      res.status(404).json({ message: "Order not found" });
-      return;
-    }
-
-    // Check if OTP is expired
-    if (new Date() > order.otpExpiry) {
-      res.status(400).json({ message: "OTP has expired" });
-      return;
-    }
-
-    // Verify OTP
-    const isValid = await order.compareOTP(otp);
-    if (!isValid) {
-      res.status(400).json({ message: "Invalid OTP" });
-      return;
-    }
-
-    order.status = "DELIVERED";
-    await order.save();
-
-    res.json({
-      message: "Delivery verified successfully",
-      order,
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error });
-  }
-};
-
 export const regenerateOTP = async (
   req: AuthRequest,
   res: Response
