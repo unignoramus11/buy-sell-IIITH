@@ -136,7 +136,7 @@ const completeDelivery = (req, res) => __awaiter(void 0, void 0, void 0, functio
         // Verify OTP
         const isValidOTP = yield order.compareOTP(otp);
         if (!isValidOTP) {
-            res.status(400).json({ message: "Invalid OTP" });
+            res.status(400).json({ message: "Incorrect OTP" });
             return;
         }
         // Check OTP expiry
