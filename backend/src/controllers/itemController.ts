@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import Item from "../models/Item";
+import Order from "../models/Order";
 
 interface AuthRequest extends Request {
   user?: {
@@ -123,15 +124,36 @@ export const deleteItem = async (
   res: Response
 ): Promise<void> => {
   try {
-    const item = await Item.findOneAndDelete({
-      _id: req.params.id,
-      seller: req.user!.id,
-    });
+    // const item = await Item.findOneAndDelete({
+    //   _id: req.params.id,
+    //   seller: req.user!.id,
+    // });
+
+    // Instead of deleting the item, we will mark it as unavailable and reduce the quantity to 0
+    // This fixes several issues with the current implementation, and allows us to keep the item in the database
+
+    const item = await Item.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        seller: req.user!.id,
+      },
+      {
+        isAvailable: false,
+        quantity: 0,
+      },
+      { new: true }
+    );
 
     if (!item) {
       res.status(404).json({ message: "Item not found" });
       return;
     }
+
+    // Then, update all orders containing this item to be cancelled
+    await Order.updateMany(
+      { item: req.params.id, status: "PENDING" },
+      { status: "CANCELLED" }
+    );
 
     res.json({ message: "Item deleted successfully" });
   } catch (error) {

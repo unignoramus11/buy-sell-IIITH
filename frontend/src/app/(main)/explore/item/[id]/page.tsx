@@ -342,7 +342,7 @@ export default function ItemPage({
                     <AlertDialogHeader>
                       <AlertDialogTitle>Delete Item</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Are you sure you want to delete this item? This action
+                        Are you sure you want to delete this item? It will be marked as sold out. This action
                         cannot be undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
