@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteItem = exports.updateItem = exports.getItem = exports.getItems = exports.createItem = void 0;
 const Item_1 = __importDefault(require("../models/Item"));
 const User_1 = __importDefault(require("../models/User"));
+const Order_1 = __importDefault(require("../models/Order"));
 const createItem = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
@@ -123,14 +124,25 @@ const updateItem = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
 exports.updateItem = updateItem;
 const deleteItem = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const item = yield Item_1.default.findOneAndDelete({
+        // const item = await Item.findOneAndDelete({
+        //   _id: req.params.id,
+        //   seller: req.user!.id,
+        // });
+        // Instead of deleting the item, we will mark it as unavailable and reduce the quantity to 0
+        // This fixes several issues with the current implementation, and allows us to keep the item in the database
+        const item = yield Item_1.default.findOneAndUpdate({
             _id: req.params.id,
             seller: req.user.id,
-        });
+        }, {
+            isAvailable: false,
+            quantity: 0,
+        }, { new: true });
         if (!item) {
             res.status(404).json({ message: "Item not found" });
             return;
         }
+        // Then, update all orders containing this item to be cancelled
+        yield Order_1.default.updateMany({ item: req.params.id, status: "PENDING" }, { status: "CANCELLED" });
         res.json({ message: "Item deleted successfully" });
     }
     catch (error) {
